@@ -164,7 +164,8 @@ async function initDashboard() {
   if (loginForm) {
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
       try {
         const user = await window.BerkayApi.login(form.get('email'), form.get('password'));
         showDashboard(user);
@@ -178,7 +179,8 @@ async function initDashboard() {
   if (signupForm) {
     signupForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
       const password = String(form.get('password') || '');
       const passwordConfirm = String(form.get('passwordConfirm') || '');
       if (password !== passwordConfirm) {
@@ -192,7 +194,7 @@ async function initDashboard() {
           email: form.get('email'),
           password
         });
-        event.currentTarget.reset();
+        formEl.reset();
         showDashboard(user);
       } catch (error) {
         toast(error.message || 'Kayıt oluşturulamadı.', 'error');
@@ -200,12 +202,6 @@ async function initDashboard() {
     });
   }
 
-  qsa('[data-demo-login]').forEach(button => {
-    button.addEventListener('click', async () => {
-      const user = await window.BerkayApi.demoLogin(button.dataset.demoLogin);
-      showDashboard(user);
-    });
-  });
 }
 
 async function showDashboard(user) {
@@ -569,13 +565,14 @@ function setupClubForms() {
   if (memberWorkForm) {
     memberWorkForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+      const formEl = event.currentTarget;
       const selected = syncSelectedClubMember();
       if (!selected) {
         toast('Görev atamak için önce takım panosundan bir üye seç.', 'error');
         return;
       }
 
-      const form = new FormData(event.currentTarget);
+      const form = new FormData(formEl);
       const taskTitle = String(form.get('taskTitle') || '').trim();
       const reportTitle = String(form.get('reportTitle') || '').trim();
       const summary = String(form.get('summary') || '').trim();
@@ -593,7 +590,7 @@ function setupClubForms() {
       selected.member.history = selected.member.history || [];
       selected.member.history.unshift({ taskTitle, reportTitle, summary, createdAt: new Date().toISOString() });
       saveClubTeams();
-      event.currentTarget.reset();
+      formEl.reset();
       toast('Görev atandı ve rapor kaydedildi.');
       await renderClub();
     });
@@ -603,7 +600,8 @@ function setupClubForms() {
   if (teamForm) {
     teamForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
       clubTeams.push({
         id: createLocalId('team'),
         name: String(form.get('teamName') || '').trim(),
@@ -611,7 +609,7 @@ function setupClubForms() {
         members: []
       });
       saveClubTeams();
-      event.currentTarget.reset();
+      formEl.reset();
       toast('Takım bloğu eklendi.');
       await renderClub();
       switchClubTab('teams');
@@ -622,7 +620,8 @@ function setupClubForms() {
   if (roleAssignmentForm) {
     roleAssignmentForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
       if (!currentClubUser || currentClubUser.role !== 'ADMIN') {
         toast('Rol atamak için Admin rolü gerekiyor.', 'error');
         return;
@@ -657,7 +656,7 @@ function setupClubForms() {
       }
 
       saveClubTeams();
-      event.currentTarget.reset();
+      formEl.reset();
       toast('Rol atandı.');
       await renderClub();
       switchClubTab('teams');
@@ -668,7 +667,8 @@ function setupClubForms() {
   if (removeTeamForm) {
     removeTeamForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
       const teamId = form.get('teamId');
       const team = clubTeams.find(item => item.id === teamId);
       if (!team) return;
@@ -736,14 +736,15 @@ async function initAcademicModule() {
   if (academicForm) {
     academicForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
       await window.BerkayApi.createAcademicEvent({
         title: form.get('title'),
         type: form.get('type'),
         startsAt: form.get('startsAt'),
         description: form.get('description')
       });
-      event.currentTarget.reset();
+      formEl.reset();
       toast('Akademik etkinlik eklendi.');
       await renderAcademicEvents();
     });

@@ -44,7 +44,12 @@ const demoState = {
 };
 
 function getApiBaseUrl() {
-  return localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_BASE_URL;
+  const stored = localStorage.getItem(API_STORAGE_KEY);
+  if (stored && !isLocalDevelopmentHost() && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api\/?$/i.test(stored)) {
+    localStorage.setItem(API_STORAGE_KEY, DEFAULT_API_BASE_URL);
+    return DEFAULT_API_BASE_URL;
+  }
+  return stored || DEFAULT_API_BASE_URL;
 }
 
 function isLocalDevelopmentHost() {
@@ -53,7 +58,7 @@ function isLocalDevelopmentHost() {
 }
 
 function isDevelopmentFallbackEnabled() {
-  return isLocalDevelopmentHost() || localStorage.getItem('berkayHubDevAuth') === 'enabled';
+  return isLocalDevelopmentHost() && localStorage.getItem('berkayHubDevAuth') === 'enabled';
 }
 
 function markApiError(error, status) {

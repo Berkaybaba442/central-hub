@@ -566,7 +566,8 @@
     event.preventDefault();
     if (!await ensureCalendarUsable()) return;
 
-    const form = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
     const startsAt = new Date(form.get('startsAt'));
     const endsAt = new Date(form.get('endsAt'));
     if (!(startsAt < endsAt)) {
@@ -593,7 +594,7 @@
         calendarId: 'primary',
         resource
       });
-      event.currentTarget.reset();
+      formEl.reset();
       fillDefaultTimes();
       await loadGoogleCalendarEvents();
       toast('Google takvim etkinliği oluşturuldu.');
