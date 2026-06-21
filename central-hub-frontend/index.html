@@ -1,192 +1,249 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EEMK Hub | Merkezi Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        hub: {
-                            bg: '#0b1120',
-                            panel: '#151e2e',
-                            border: '#2a374a',
-                            text: '#94a3b8',
-                            blue: '#3b82f6',
-                            purple: '#8b5cf6',
-                            red: '#ef4444',
-                            green: '#10b981',
-                            yellow: '#eab308'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { background-color: #0b1120; }
-        /* Kartların sağ altındaki dev, soluk ikonlar için */
-        .watermark-icon {
-            position: absolute;
-            right: -15%;
-            bottom: -15%;
-            width: 150px;
-            height: 150px;
-            opacity: 0.03;
-            pointer-events: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Berkay Hub | Merkezi Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=20260621-adminfix" />
 </head>
-<body class="text-slate-300 min-h-screen flex justify-center p-4 md:p-8">
+<body data-app="dashboard">
+  <main class="app-shell">
+    <section id="login-screen" class="mx-auto grid min-h-screen w-full max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1.12fr_0.88fr] lg:px-8">
+      <div>
+        <span class="page-kicker">Berkay Hub Merkezi Portal</span>
+        <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-white sm:text-6xl">
+          Kulüp, akademi ve güvenlik sistemlerini tek panelde yönet.
+        </h1>
+        <p class="mt-5 max-w-2xl text-base leading-8 text-slate-400 sm:text-lg">
+          Modüler çalışan merkezi dashboard. Admin yetkisiyle kamera ağına, kullanıcı yetkisiyle günlük plan ve kulüp görevlerine erişebilirsin.
+        </p>
 
-    <div class="w-full max-w-6xl flex flex-col gap-8">
-        
-        <header class="flex justify-between items-center bg-hub-panel border border-hub-border rounded-xl p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-lg flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-500/20">
-                    <div class="w-5 h-1 bg-white rounded-full"></div>
-                    <div class="w-5 h-1 bg-white rounded-full"></div>
-                </div>
-                <div>
-                    <h1 class="text-white font-bold text-xl tracking-wide">EEMK<span class="text-blue-400">HUB</span></h1>
-                    <p class="text-xs text-hub-text font-mono">Merkezi Erişim Portalı</p>
-                </div>
+        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="stat-card">
+            <span class="icon-box"><i class="fa-solid fa-layer-group"></i></span>
+            <strong class="mt-4 block text-3xl font-black text-white">3</strong>
+            <span class="stat-subtext">Ana modül</span>
+          </div>
+          <div class="stat-card">
+            <span class="icon-box green"><i class="fa-solid fa-plug"></i></span>
+            <strong class="mt-4 block text-3xl font-black text-white">REST</strong>
+            <span class="stat-subtext">Spring Boot API</span>
+          </div>
+          <div class="stat-card">
+            <span class="icon-box purple"><i class="fa-solid fa-database"></i></span>
+            <strong class="mt-4 block text-3xl font-black text-white">SQLite</strong>
+            <span class="stat-subtext">Taşınabilir DB</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="glass-card p-6 sm:p-8">
+        <div class="flex items-center gap-4">
+          <div class="brand-mark">
+            <i class="fa-solid fa-server"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-black text-white">Hesabına Gir</h2>
+            <p class="text-sm text-slate-400">Sign in veya yeni hesap oluştur</p>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-3">
+          <button class="tab-button active justify-center" type="button" data-auth-tab="signin">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            Sign in
+          </button>
+          <button class="tab-button justify-center" type="button" data-auth-tab="signup">
+            <i class="fa-solid fa-user-plus"></i>
+            Sign up
+          </button>
+        </div>
+
+        <div class="mt-6 border-t border-slate-700/70 pt-6">
+          <label for="apiBaseUrl" class="mb-2 block text-sm font-bold text-slate-300">Backend API URL</label>
+          <div class="flex gap-2">
+            <input id="apiBaseUrl" class="input-dark" value="http://localhost:8080/api" />
+            <button id="saveApiBaseUrl" class="btn-secondary" type="button">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Kaydet
+            </button>
+          </div>
+        </div>
+
+        <form id="loginForm" class="mt-6 space-y-4" data-auth-panel="signin">
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-300">E-posta</span>
+            <input name="email" type="email" class="input-dark" value="admin@berkayhub.local" required />
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-300">Şifre</span>
+            <input name="password" type="password" class="input-dark" value="admin123" required />
+          </label>
+          <button class="btn-primary w-full" type="submit">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            Panele Gir
+          </button>
+        </form>
+
+        <form id="signupForm" class="mt-6 hidden space-y-4" data-auth-panel="signup">
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-300">Ad Soyad</span>
+            <input name="displayName" class="input-dark" placeholder="Örn. Berkay Kerem" required />
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-300">E-posta</span>
+            <input name="email" type="email" class="input-dark" placeholder="isim@berkayhub.local" required />
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-300">Şifre</span>
+            <input name="password" type="password" class="input-dark" minlength="4" required />
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-300">Şifre Tekrar</span>
+            <input name="passwordConfirm" type="password" class="input-dark" minlength="4" required />
+          </label>
+          <button class="btn-primary w-full" type="submit">
+            <i class="fa-solid fa-user-plus"></i>
+            Hesap Oluştur
+          </button>
+          <p class="text-xs leading-5 text-slate-400">Yeni hesaplar varsayılan olarak Üye rolüyle başlar. Rolleri admin daha sonra atar.</p>
+        </form>
+
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <button class="btn-secondary" data-demo-login="ADMIN">
+            <i class="fa-solid fa-shield-halved"></i>
+            Demo Admin
+          </button>
+          <button class="btn-secondary" data-demo-login="USER">
+            <i class="fa-solid fa-user"></i>
+            Demo User
+          </button>
+        </div>
+      </aside>
+    </section>
+
+    <section id="dashboard-screen" class="hidden min-h-screen">
+      <nav class="top-nav">
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center gap-3">
+            <span class="brand-mark"><i class="fa-solid fa-server"></i></span>
+            <div>
+              <div class="text-lg font-black tracking-wide text-white">BERKAY<span class="text-blue-400">HUB</span></div>
+              <div class="font-mono text-xs text-slate-400">Merkezi Erişim Portalı</div>
             </div>
-            
-            <div class="flex items-center gap-6">
-                <div class="text-right hidden md:block">
-                    <h2 class="text-white font-semibold text-sm">Berkay Kerem Oltuluoğlu</h2>
-                    <div class="flex items-center justify-end gap-1 text-xs text-hub-green mt-0.5">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                        <span>Sistem Yöneticisi</span>
-                    </div>
-                </div>
-                <button class="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="hidden text-right sm:block">
+              <div class="text-sm font-bold text-white" data-user-name></div>
+              <div class="mt-0.5 text-xs font-mono text-emerald-400"><i class="fa-solid fa-shield-halved mr-1"></i><span data-user-role></span></div>
             </div>
+            <button class="icon-button" data-action="logout" title="Çıkış Yap">
+              <i class="fa-solid fa-power-off"></i>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <header class="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+          <div>
+            <span class="page-kicker">Merkezi Dashboard</span>
+            <h1 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Sistemlere hoş geldin.</h1>
+            <p class="mt-2 max-w-2xl text-slate-400">Erişim yetkin olan modüller, canlı özetler ve son aktiviteler bu ekranda toplanır.</p>
+          </div>
+          <span class="status-pill"><span class="status-dot"></span>API bağlantısı hazır</span>
         </header>
 
-        <section class="mt-4">
-            <h2 class="text-3xl font-bold text-white mb-2">Sistemlere Hoş Geldin.</h2>
-            <p class="text-hub-text text-sm">Erişim yetkiniz olan modüller aşağıda listelenmiştir. Lütfen bağlanmak istediğiniz servisi seçin.</p>
-        </section>
-
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            
-            <a href="modules/club-management/index.html" class="bg-hub-panel border border-hub-border rounded-2xl p-6 relative overflow-hidden group hover:border-hub-blue/50 transition-colors flex flex-col justify-between min-h-[220px]">
-                <svg class="watermark-icon text-hub-blue" fill="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                <div>
-                    <div class="w-12 h-12 bg-hub-blue/10 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-hub-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-2">Kulüp Teknik Yönetim</h3>
-                    <p class="text-sm text-hub-text leading-relaxed">Proje takibi, takım atamaları, haftalık raporlar ve to-do listeleri.</p>
-                </div>
-                <div class="mt-6 flex justify-between items-center">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-hub-green/10 border border-hub-green/20 text-hub-green text-xs font-medium">
-                        <span class="w-1.5 h-1.5 rounded-full bg-hub-green"></span> Aktif
-                    </span>
-                    <svg class="w-5 h-5 text-hub-text group-hover:text-white transition-colors group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </div>
-            </a>
-
-            <a href="modules/academic-planner/index.html" class="bg-hub-panel border border-hub-border rounded-2xl p-6 relative overflow-hidden group hover:border-hub-purple/50 transition-colors flex flex-col justify-between min-h-[220px]">
-                <svg class="watermark-icon text-hub-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"></path><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path></svg>
-                <div>
-                    <div class="w-12 h-12 bg-hub-purple/10 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-hub-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-2">Akademik Planlayıcı</h3>
-                    <p class="text-sm text-hub-text leading-relaxed">Kişisel ders programı, sınav tarihleri ve üniversite akademik takvimi.</p>
-                </div>
-                <div class="mt-6 flex justify-between items-center">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-hub-green/10 border border-hub-green/20 text-hub-green text-xs font-medium">
-                        <span class="w-1.5 h-1.5 rounded-full bg-hub-green"></span> Aktif
-                    </span>
-                    <svg class="w-5 h-5 text-hub-text group-hover:text-white transition-colors group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </div>
-            </a>
-
-            <a href="modules/security-cameras/index.html" class="bg-hub-panel border border-hub-border rounded-2xl p-6 relative overflow-hidden group hover:border-hub-red/50 transition-colors flex flex-col justify-between min-h-[220px]">
-                <svg class="watermark-icon text-hub-red" fill="currentColor" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                <div>
-                    <div class="w-12 h-12 bg-hub-red/10 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-hub-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-2">Güvenlik Ağı</h3>
-                    <p class="text-sm text-hub-text leading-relaxed">Laboratuvar canlı kamera izleme, hareket algılama ve kayıt arşivi.</p>
-                </div>
-                <div class="mt-6 flex justify-between items-center">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-hub-yellow/10 border border-hub-yellow/20 text-hub-yellow text-xs font-medium">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
-                        Sadece Admin
-                    </span>
-                    <svg class="w-5 h-5 text-hub-text group-hover:text-white transition-colors group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </div>
-            </a>
-
-            <button class="bg-transparent border-2 border-dashed border-hub-border rounded-2xl p-6 hover:bg-hub-panel/50 hover:border-hub-text transition-colors flex flex-col items-center justify-center text-center min-h-[220px]">
-                <div class="w-12 h-12 bg-hub-panel rounded-full flex items-center justify-center mb-4 text-hub-text">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                </div>
-                <h3 class="text-lg font-bold text-hub-text mb-2">Yeni Modül Ekle</h3>
-                <p class="text-sm text-slate-600">Sisteme entegre edilecek yeni projeler burada yer alacaktır.</p>
-            </button>
-        </section>
-
-        <section class="mt-4 bg-hub-panel border border-hub-border rounded-xl p-6">
-            <div class="flex items-center gap-2 mb-6">
-                <svg class="w-5 h-5 text-hub-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
-                <h3 class="text-lg font-bold text-white">Sunucu Durumu (VDS)</h3>
+        <div class="grid gap-4 md:grid-cols-4">
+          <div class="stat-card">
+            <div class="flex items-center justify-between gap-3">
+              <p class="stat-label">Rapor</p>
+              <span class="icon-box"><i class="fa-solid fa-file-lines"></i></span>
             </div>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-hub-border/50">
-                
-                <div class="px-4 first:pl-0">
-                    <p class="text-xs text-hub-text mb-1">CPU Kullanımı</p>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-2xl font-mono text-white">12%</span>
-                        <span class="text-xs font-mono text-hub-green">Normal</span>
-                    </div>
-                </div>
-
-                <div class="px-4">
-                    <p class="text-xs text-hub-text mb-1">RAM</p>
-                    <div class="flex items-baseline gap-1 font-mono">
-                        <span class="text-2xl text-white">2.4</span>
-                        <span class="text-sm text-white">GB</span>
-                        <span class="text-xs text-slate-500 ml-1">/ 8 GB</span>
-                    </div>
-                </div>
-
-                <div class="px-4">
-                    <p class="text-xs text-hub-text mb-1">Ağ Trafiği (Tünel)</p>
-                    <div class="flex items-baseline gap-1 font-mono">
-                        <span class="text-2xl text-white">45</span>
-                        <span class="text-sm text-white">Mbps</span>
-                    </div>
-                </div>
-
-                <div class="px-4">
-                    <p class="text-xs text-hub-text mb-1">Aktif Oturumlar</p>
-                    <div class="flex items-baseline gap-1 font-mono">
-                        <span class="text-2xl text-white">3</span>
-                        <span class="text-sm text-white">Kullanıcı</span>
-                    </div>
-                </div>
-
+            <strong id="statReports" class="stat-number mt-4 block">0</strong>
+            <p class="stat-subtext mt-2">Kulüp raporları</p>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center justify-between gap-3">
+              <p class="stat-label">Açık Görev</p>
+              <span class="icon-box green"><i class="fa-solid fa-list-check"></i></span>
             </div>
-        </section>
+            <strong id="statTasks" class="stat-number mt-4 block">0</strong>
+            <p class="stat-subtext mt-2">Tamamlanmayı bekleyen</p>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center justify-between gap-3">
+              <p class="stat-label">Akademik Etkinlik</p>
+              <span class="icon-box purple"><i class="fa-solid fa-calendar-check"></i></span>
+            </div>
+            <strong id="statEvents" class="stat-number mt-4 block">0</strong>
+            <p class="stat-subtext mt-2">Yaklaşan kayıt</p>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center justify-between gap-3">
+              <p class="stat-label">Bellek</p>
+              <span class="icon-box yellow"><i class="fa-solid fa-memory"></i></span>
+            </div>
+            <strong id="statMemory" class="mt-4 block text-2xl font-black text-white">-</strong>
+            <p class="stat-subtext mt-2">Runtime kullanım</p>
+          </div>
+        </div>
 
-    </div>
+        <div class="mt-8 grid gap-6 lg:grid-cols-[1.18fr_0.82fr]">
+          <div>
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="section-heading"><i class="fa-solid fa-table-cells-large text-blue-400"></i>Modüller</h2>
+              <span class="badge">Rol bazlı erişim</span>
+            </div>
+            <div class="grid gap-5 md:grid-cols-2">
+              <a href="modules/club-management/index.html" class="app-card card-blue p-6">
+                <span class="icon-box"><i class="fa-solid fa-users-gear"></i></span>
+                <h3 class="mt-5 text-xl font-black text-white">Kulüp Yönetimi</h3>
+                <p class="mt-2 min-h-12 text-sm leading-6 text-slate-400">Raporlama, todo listesi ve takım görevlendirmeleri.</p>
+                <div class="mt-auto flex items-center justify-between pt-6">
+                  <span class="status-pill"><span class="status-dot"></span>Aktif</span>
+                  <i class="fa-solid fa-arrow-right text-slate-500"></i>
+                </div>
+              </a>
+
+              <a href="modules/academic-planner/index.html" class="app-card card-purple p-6">
+                <span class="icon-box purple"><i class="fa-solid fa-graduation-cap"></i></span>
+                <h3 class="mt-5 text-xl font-black text-white">Akademik Planlayıcı</h3>
+                <p class="mt-2 min-h-12 text-sm leading-6 text-slate-400">Ders, sınav, çalışma ve proje takvimi.</p>
+                <div class="mt-auto flex items-center justify-between pt-6">
+                  <span class="status-pill"><span class="status-dot"></span>Aktif</span>
+                  <i class="fa-solid fa-arrow-right text-slate-500"></i>
+                </div>
+              </a>
+
+              <a href="modules/security-cameras/index.html" class="app-card card-red p-6 md:col-span-2" data-role="ADMIN">
+                <span class="icon-box red"><i class="fa-solid fa-video"></i></span>
+                <h3 class="mt-5 text-xl font-black text-white">Güvenlik Ağı</h3>
+                <p class="mt-2 text-sm leading-6 text-slate-400">Admin'e özel laboratuvar kamera izleme, hareket algılama hazırlığı ve sistem metrikleri.</p>
+                <div class="mt-auto flex items-center justify-between pt-6">
+                  <span class="status-pill warning"><i class="fa-solid fa-lock text-[10px]"></i>Sadece Admin</span>
+                  <i class="fa-solid fa-arrow-right text-slate-500"></i>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <aside class="panel-card p-6">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+              <h2 class="section-heading"><i class="fa-solid fa-clock-rotate-left text-blue-400"></i>Son Aktiviteler</h2>
+              <span class="badge">Canlı özet</span>
+            </div>
+            <ul id="activityList" class="mt-5 space-y-3"></ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/api.js?v=20260621-adminfix"></script>
+  <script src="assets/js/main.js?v=20260621-adminfix"></script>
 </body>
 </html>

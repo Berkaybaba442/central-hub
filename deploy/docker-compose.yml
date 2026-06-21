@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ../berkay-hub-backend
+    container_name: berkay-hub-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - berkay_hub_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:1.27-alpine
+    container_name: berkay-hub-frontend
+    ports:
+      - "5500:80"
+    volumes:
+      - ../central-hub-frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  berkay_hub_data:

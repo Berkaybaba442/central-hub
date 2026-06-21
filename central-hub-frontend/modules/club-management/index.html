@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Berkay Hub | Kulüp Yönetimi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css?v=20260621-adminfix" />
+</head>
+<body data-app="club">
+  <nav class="top-nav">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <a href="../../index.html" class="flex items-center gap-3">
+        <span class="brand-mark"><i class="fa-solid fa-users-gear"></i></span>
+        <div>
+          <div class="text-lg font-black tracking-wide text-white">Kulüp Yönetimi</div>
+          <div class="font-mono text-xs text-slate-400">Berkay Hub modülü</div>
+        </div>
+      </a>
+
+      <div class="flex items-center gap-3">
+        <span class="badge" data-user-role></span>
+        <a href="../../index.html" class="btn-secondary hidden sm:inline-flex">
+          <i class="fa-solid fa-table-cells-large"></i>
+          Dashboard
+        </a>
+        <button class="icon-button" data-action="logout" title="Çıkış">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <header class="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+      <div>
+        <span class="page-kicker">Operasyon Paneli</span>
+        <h1 class="mt-3 text-3xl font-black text-white sm:text-4xl">Kulüp teknik yönetimi</h1>
+        <p class="mt-2 max-w-2xl text-slate-400">Takımlar, üyeler, profil bazlı görev atamaları ve raporları tek akışta yönet.</p>
+      </div>
+      <span class="status-pill"><span class="status-dot"></span>Takım panosu aktif</span>
+    </header>
+
+    <section class="grid gap-4 md:grid-cols-4">
+      <div class="stat-card">
+        <div class="flex items-center justify-between gap-3">
+          <p class="stat-label">Takım</p>
+          <span class="icon-box"><i class="fa-solid fa-layer-group"></i></span>
+        </div>
+        <strong id="teamCount" class="stat-number mt-4 block">0</strong>
+        <p class="stat-subtext mt-2">Aktif blok</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center justify-between gap-3">
+          <p class="stat-label">Üye</p>
+          <span class="icon-box purple"><i class="fa-solid fa-user-group"></i></span>
+        </div>
+        <strong id="memberCount" class="stat-number mt-4 block">0</strong>
+        <p class="stat-subtext mt-2">Profil kaydı</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center justify-between gap-3">
+          <p class="stat-label">Açık Görev</p>
+          <span class="icon-box green"><i class="fa-solid fa-list-check"></i></span>
+        </div>
+        <strong id="openTaskCount" class="stat-number mt-4 block">0</strong>
+        <p class="stat-subtext mt-2">Atanmış iş</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center justify-between gap-3">
+          <p class="stat-label">Rapor</p>
+          <span class="icon-box yellow"><i class="fa-solid fa-file-lines"></i></span>
+        </div>
+        <strong id="reportCount" class="stat-number mt-4 block">0</strong>
+        <p class="stat-subtext mt-2">Kayıtlı çıktı</p>
+      </div>
+    </section>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      <button class="tab-button active" type="button" data-club-tab="teams">
+        <i class="fa-solid fa-people-group"></i>
+        Takımlar
+      </button>
+      <button class="tab-button" type="button" data-club-tab="work">
+        <i class="fa-solid fa-clipboard-check"></i>
+        Rapor & Görev
+      </button>
+      <button class="tab-button" type="button" data-club-tab="manage">
+        <i class="fa-solid fa-sliders"></i>
+        Takım / Rol Yönetimi
+      </button>
+    </div>
+
+    <section id="club-tab-teams" data-club-panel="teams" class="mt-6 grid gap-6 xl:grid-cols-[1.22fr_0.78fr]">
+      <div>
+        <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <h2 class="section-heading"><i class="fa-solid fa-people-group text-blue-400"></i>Takım Blokları</h2>
+          <span class="badge">Üyeye tıkla, profil açılır</span>
+        </div>
+        <div id="teamBoard" class="grid gap-5 lg:grid-cols-2"></div>
+      </div>
+
+      <aside id="memberProfile" class="panel-card p-6"></aside>
+    </section>
+
+    <section id="club-tab-work" data-club-panel="work" class="mt-6 hidden">
+      <div class="grid gap-6 lg:grid-cols-[0.88fr_1.12fr]">
+        <aside class="panel-card p-6">
+          <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+            <h2 class="section-heading"><i class="fa-solid fa-pen-to-square text-blue-400"></i>Rapor & Görev Atama</h2>
+            <span class="badge">Profil bağlantılı</span>
+          </div>
+          <form id="memberWorkForm" class="mt-5 space-y-3">
+            <label class="block">
+              <span class="mb-2 block text-sm font-bold text-slate-300">Seçili üye</span>
+              <input id="selectedMemberInput" class="input-dark" value="Önce bir üye seç" readonly />
+            </label>
+            <input name="taskTitle" class="input-dark" placeholder="Görev başlığı" required />
+            <select name="priority" class="input-dark">
+              <option value="HIGH">Yüksek öncelik</option>
+              <option value="MEDIUM" selected>Orta öncelik</option>
+              <option value="LOW">Düşük öncelik</option>
+            </select>
+            <input name="reportTitle" class="input-dark" placeholder="Rapor başlığı" required />
+            <textarea name="summary" class="input-dark min-h-28" placeholder="Görev bağlamı ve rapor özeti" required></textarea>
+            <button class="btn-primary w-full" type="submit">
+              <i class="fa-solid fa-paper-plane"></i>
+              Görev Ata ve Raporla
+            </button>
+          </form>
+        </aside>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+          <section class="panel-card p-6">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+              <h2 class="section-heading"><i class="fa-solid fa-list-check text-blue-400"></i>Görev Akışı</h2>
+              <span class="badge">Tıklayınca tamamlanır</span>
+            </div>
+            <ul id="taskList" class="mt-6 space-y-3"></ul>
+          </section>
+
+          <section class="panel-card p-6">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+              <h2 class="section-heading"><i class="fa-solid fa-file-lines text-blue-400"></i>Rapor Geçmişi</h2>
+              <span class="badge">Son kayıtlar</span>
+            </div>
+            <div id="reportList" class="mt-6 space-y-3"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section id="club-tab-manage" data-club-panel="manage" class="mt-6 hidden">
+      <div class="grid gap-6 lg:grid-cols-3">
+        <form id="teamForm" class="panel-card p-6">
+          <div class="border-b border-slate-700/70 pb-4">
+            <h2 class="section-heading"><i class="fa-solid fa-square-plus text-blue-400"></i>Takım Ekle</h2>
+            <p class="mt-2 text-sm text-slate-400">Yeni bir takım bloğu oluştur.</p>
+          </div>
+          <div class="mt-5 space-y-3">
+            <input name="teamName" class="input-dark" placeholder="Takım adı" required />
+            <textarea name="teamDescription" class="input-dark min-h-24" placeholder="Takım açıklaması"></textarea>
+            <button class="btn-primary w-full" type="submit">
+              <i class="fa-solid fa-plus"></i>
+              Takım Ekle
+            </button>
+          </div>
+        </form>
+
+        <form id="roleAssignmentForm" class="panel-card p-6" data-role="ADMIN">
+          <div class="border-b border-slate-700/70 pb-4">
+            <h2 class="section-heading"><i class="fa-solid fa-user-shield text-blue-400"></i>Rol Ata</h2>
+            <p class="mt-2 text-sm text-slate-400">Kayıtlı kullanıcıya rol ver ve gerekiyorsa takım bloğuna bağla.</p>
+          </div>
+          <div class="mt-5 space-y-3">
+            <select id="roleUserSelect" name="email" class="input-dark" required></select>
+            <select id="roleSelect" name="role" class="input-dark" required></select>
+            <select id="roleTeamSelect" name="teamId" class="input-dark"></select>
+            <button class="btn-primary w-full" type="submit">
+              <i class="fa-solid fa-shield-halved"></i>
+              Rol Ata
+            </button>
+          </div>
+        </form>
+
+        <div id="roleAssignmentLocked" class="panel-card p-6 hidden">
+          <div class="text-center">
+            <span class="icon-box yellow mx-auto"><i class="fa-solid fa-lock"></i></span>
+            <h2 class="mt-4 text-xl font-black text-white">Admin Yetkisi Gerekli</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">Rol atama panelini sadece Admin rolündeki kullanıcılar görebilir.</p>
+          </div>
+        </div>
+
+        <form id="removeTeamForm" class="panel-card p-6">
+          <div class="border-b border-slate-700/70 pb-4">
+            <h2 class="section-heading"><i class="fa-solid fa-trash-can text-red-400"></i>Takım Çıkar</h2>
+            <p class="mt-2 text-sm text-slate-400">Takım bloğunu ve bağlı üye kartlarını kaldır.</p>
+          </div>
+          <div class="mt-5 space-y-3">
+            <select id="removeTeamSelect" name="teamId" class="input-dark" required></select>
+            <button class="btn-secondary w-full border-red-500/30 text-red-200" type="submit">
+              <i class="fa-solid fa-trash"></i>
+              Takımı Çıkar
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="../../assets/js/api.js?v=20260621-adminfix"></script>
+  <script src="../../assets/js/main.js?v=20260621-adminfix"></script>
+</body>
+</html>

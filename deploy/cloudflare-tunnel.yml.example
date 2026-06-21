@@ -1,0 +1,9 @@
+tunnel: BERKAY_HUB_TUNNEL_ID
+credentials-file: /home/berkay/.cloudflared/BERKAY_HUB_TUNNEL_ID.json
+
+ingress:
+  - hostname: hub.example.com
+    service: http://localhost:5500
+  - hostname: api.hub.example.com
+    service: http://localhost:8080
+  - service: http_status:404
