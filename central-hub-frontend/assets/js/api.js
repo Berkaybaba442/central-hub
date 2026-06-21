@@ -2,7 +2,7 @@ const API_STORAGE_KEY = 'berkayHubApiBaseUrl';
 const TOKEN_STORAGE_KEY = 'berkayHubToken';
 const USER_STORAGE_KEY = 'berkayHubUser';
 const REGISTERED_USERS_STORAGE_KEY = 'berkayHubRegisteredUsers';
-const DEFAULT_API_BASE_URL = 'http://localhost:8080/api';
+const DEFAULT_API_BASE_URL = isLocalDevelopmentHost() ? 'http://localhost:8080/api' : '/api';
 
 const APP_ROLES = [
   { value: 'UYE', label: 'Üye' },
@@ -45,6 +45,25 @@ const demoState = {
 
 function getApiBaseUrl() {
   return localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_BASE_URL;
+}
+
+function isLocalDevelopmentHost() {
+  const hostname = window.location.hostname;
+  return !hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function isDevelopmentFallbackEnabled() {
+  return isLocalDevelopmentHost() || localStorage.getItem('berkayHubDevAuth') === 'enabled';
+}
+
+function markApiError(error, status) {
+  error.isApiError = true;
+  error.status = status;
+  return error;
+}
+
+function isApiError(error) {
+  return Boolean(error && error.isApiError);
 }
 
 function setApiBaseUrl(url) {
@@ -148,7 +167,7 @@ async function fetchJson(path, options = {}) {
     } catch {
       // ignore json parse fail
     }
-    throw new Error(message);
+    throw markApiError(new Error(message), response.status);
   }
 
   if (response.status === 204) return null;
@@ -157,6 +176,14 @@ async function fetchJson(path, options = {}) {
 
 function isDemoToken() {
   return String(getToken() || '').startsWith('demo-');
+}
+
+function isLocalToken() {
+  return String(getToken() || '').startsWith('local-');
+}
+
+function isOfflineToken() {
+  return isDemoToken() || isLocalToken();
 }
 
 function createDemoUser(role) {
@@ -177,6 +204,14 @@ async function login(email, password) {
     setSession(data.token, data.user);
     return data.user;
   } catch (error) {
+    if (isApiError(error)) {
+      throw error;
+    }
+
+    if (!isDevelopmentFallbackEnabled()) {
+      throw new Error('Backend bağlantısı kurulamadı. API adresini kontrol et veya backend servisini başlat.');
+    }
+
     const localUser = getRegisteredUsers().find(user =>
       String(user.email).toLowerCase() === String(email).toLowerCase() &&
       String(user.password) === String(password)
@@ -187,13 +222,7 @@ async function login(email, password) {
       return user;
     }
 
-    const isAdmin = String(email).includes('admin') || password === 'admin123';
-    const user = createDemoUser(isAdmin ? 'ADMIN' : 'USER');
-    setSession(`demo-${user.role.toLowerCase()}-${Date.now()}`, user);
-    if (window.BerkayUI && typeof window.BerkayUI.toast === 'function') {
-      window.BerkayUI.toast('Backend bulunamadı, demo oturumu açıldı. Gerçek API için backend çalıştır.', 'info');
-    }
-    return user;
+    throw new Error('E-posta veya şifre hatalı.');
   }
 }
 
@@ -205,7 +234,15 @@ async function signup(payload) {
     });
     setSession(data.token, data.user);
     return data.user;
-  } catch {
+  } catch (error) {
+    if (isApiError(error)) {
+      throw error;
+    }
+
+    if (!isDevelopmentFallbackEnabled()) {
+      throw new Error('Backend bağlantısı kurulamadı. Hesap oluşturmak için API servisi çalışmalı.');
+    }
+
     const users = getRegisteredUsers();
     const email = String(payload.email || '').trim().toLowerCase();
     if (users.some(user => String(user.email).toLowerCase() === email)) {
@@ -228,13 +265,16 @@ async function signup(payload) {
 }
 
 async function demoLogin(role = 'ADMIN') {
+  if (!isDevelopmentFallbackEnabled()) {
+    throw new Error('Demo giriş production ortamında kapalı.');
+  }
   const user = createDemoUser(role);
   setSession(`demo-${user.role.toLowerCase()}-${Date.now()}`, user);
   return user;
 }
 
 async function logout() {
-  if (!isDemoToken()) {
+  if (!isOfflineToken()) {
     try { await fetchJson('/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
   }
   clearSession();
@@ -243,13 +283,20 @@ async function logout() {
 async function me() {
   const storedUser = getStoredUser();
   if (!getToken()) return null;
-  if (isDemoToken()) return storedUser;
+  if (isOfflineToken()) {
+    if (!isDevelopmentFallbackEnabled()) {
+      clearSession();
+      return null;
+    }
+    return storedUser;
+  }
   try {
     const data = await fetchJson('/auth/me');
     setSession(getToken(), data.user);
     return data.user;
   } catch {
-    return storedUser;
+    clearSession();
+    return null;
   }
 }
 
@@ -268,6 +315,7 @@ const BerkayApi = {
   getToken,
   getStoredUser,
   getRegisteredUsers,
+  isDevelopmentFallbackEnabled,
   clearSession,
   roles: APP_ROLES,
   login,

@@ -35,6 +35,25 @@ public class AuthController {
         return new LoginResponse(token, UserResponse.from(user));
     }
 
+    @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
+    public LoginResponse signup(@Valid @RequestBody SignupRequest request) {
+        String email = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu e-posta ile kayıtlı bir kullanıcı var.");
+        }
+
+        AppUser user = new AppUser(
+                email,
+                request.displayName().trim(),
+                passwordEncoder.encode(request.password()),
+                UserRole.USER
+        );
+        AppUser saved = userRepository.save(user);
+        String token = tokenStore.issue(saved);
+        return new LoginResponse(token, UserResponse.from(saved));
+    }
+
     @GetMapping("/me")
     public MeResponse me(Authentication authentication) {
         AppUser user = userRepository.findByEmailIgnoreCase(authentication.getName())

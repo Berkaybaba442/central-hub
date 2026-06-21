@@ -6,7 +6,7 @@
   <title>Berkay Hub | Merkezi Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/style.css?v=20260621-adminfix" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20260622-authfix" />
 </head>
 <body data-app="dashboard">
   <main class="app-shell">
@@ -64,7 +64,7 @@
         <div class="mt-6 border-t border-slate-700/70 pt-6">
           <label for="apiBaseUrl" class="mb-2 block text-sm font-bold text-slate-300">Backend API URL</label>
           <div class="flex gap-2">
-            <input id="apiBaseUrl" class="input-dark" value="http://localhost:8080/api" />
+            <input id="apiBaseUrl" class="input-dark" value="/api" />
             <button id="saveApiBaseUrl" class="btn-secondary" type="button">
               <i class="fa-solid fa-floppy-disk"></i>
               Kaydet
@@ -75,11 +75,11 @@
         <form id="loginForm" class="mt-6 space-y-4" data-auth-panel="signin">
           <label class="block">
             <span class="mb-2 block text-sm font-bold text-slate-300">E-posta</span>
-            <input name="email" type="email" class="input-dark" value="admin@berkayhub.local" required />
+            <input name="email" type="email" class="input-dark" placeholder="mail@ornek.com" required />
           </label>
           <label class="block">
             <span class="mb-2 block text-sm font-bold text-slate-300">Şifre</span>
-            <input name="password" type="password" class="input-dark" value="admin123" required />
+            <input name="password" type="password" class="input-dark" required />
           </label>
           <button class="btn-primary w-full" type="submit">
             <i class="fa-solid fa-arrow-right-to-bracket"></i>
@@ -98,11 +98,11 @@
           </label>
           <label class="block">
             <span class="mb-2 block text-sm font-bold text-slate-300">Şifre</span>
-            <input name="password" type="password" class="input-dark" minlength="4" required />
+            <input name="password" type="password" class="input-dark" minlength="6" required />
           </label>
           <label class="block">
             <span class="mb-2 block text-sm font-bold text-slate-300">Şifre Tekrar</span>
-            <input name="passwordConfirm" type="password" class="input-dark" minlength="4" required />
+            <input name="passwordConfirm" type="password" class="input-dark" minlength="6" required />
           </label>
           <button class="btn-primary w-full" type="submit">
             <i class="fa-solid fa-user-plus"></i>
@@ -110,17 +110,6 @@
           </button>
           <p class="text-xs leading-5 text-slate-400">Yeni hesaplar varsayılan olarak Üye rolüyle başlar. Rolleri admin daha sonra atar.</p>
         </form>
-
-        <div class="mt-4 grid grid-cols-2 gap-3">
-          <button class="btn-secondary" data-demo-login="ADMIN">
-            <i class="fa-solid fa-shield-halved"></i>
-            Demo Admin
-          </button>
-          <button class="btn-secondary" data-demo-login="USER">
-            <i class="fa-solid fa-user"></i>
-            Demo User
-          </button>
-        </div>
       </aside>
     </section>
 
@@ -243,7 +232,7 @@
     </section>
   </main>
 
-  <script src="assets/js/api.js?v=20260621-adminfix"></script>
-  <script src="assets/js/main.js?v=20260621-adminfix"></script>
+  <script src="assets/js/api.js?v=20260622-authfix"></script>
+  <script src="assets/js/main.js?v=20260622-authfix"></script>
 </body>
 </html>

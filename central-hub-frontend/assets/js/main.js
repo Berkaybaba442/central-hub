@@ -165,8 +165,12 @@ async function initDashboard() {
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
-      const user = await window.BerkayApi.login(form.get('email'), form.get('password'));
-      showDashboard(user);
+      try {
+        const user = await window.BerkayApi.login(form.get('email'), form.get('password'));
+        showDashboard(user);
+      } catch (error) {
+        toast(error.message || 'Giriş yapılamadı.', 'error');
+      }
     });
   }
 
