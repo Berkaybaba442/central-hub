@@ -6,7 +6,7 @@
   <title>Berkay Hub | Merkezi Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/style.css?v=20260622-authnodemo" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20260622-notifications2" />
 </head>
 <body data-app="dashboard">
   <main class="app-shell">
@@ -125,6 +125,10 @@
           </div>
 
           <div class="flex items-center gap-3">
+            <button class="icon-button relative" type="button" data-scroll-notifications title="Bildirimler">
+              <i class="fa-solid fa-bell"></i>
+              <span id="topNotificationBadge" class="notification-dot hidden">0</span>
+            </button>
             <div class="hidden text-right sm:block">
               <div class="text-sm font-bold text-white" data-user-name></div>
               <div class="mt-0.5 text-xs font-mono text-emerald-400"><i class="fa-solid fa-shield-halved mr-1"></i><span data-user-role></span></div>
@@ -220,30 +224,29 @@
             </div>
           </div>
 
-          <aside class="panel-card p-6">
-            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
-              <div class="flex flex-wrap gap-2">
-                <button class="tab-button active" type="button" data-dashboard-tab="activity">
-                  <i class="fa-solid fa-clock-rotate-left"></i>
-                  Son Aktiviteler
-                </button>
-                <button class="tab-button" type="button" data-dashboard-tab="notifications">
-                  <i class="fa-solid fa-bell"></i>
-                  Bildirimler
-                  <span id="notificationBadge" class="badge hidden">0</span>
-                </button>
+          <div class="space-y-6">
+            <aside class="panel-card p-6">
+              <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+                <h2 class="section-heading"><i class="fa-solid fa-clock-rotate-left text-blue-400"></i>Son Aktiviteler</h2>
+                <span class="badge">Canlı özet</span>
               </div>
-              <span class="badge">Canlı özet</span>
-            </div>
-            <ul id="activityList" data-dashboard-panel="activity" class="mt-5 space-y-3"></ul>
-            <ul id="notificationList" data-dashboard-panel="notifications" class="mt-5 hidden space-y-3"></ul>
-          </aside>
+              <ul id="activityList" class="mt-5 space-y-3"></ul>
+            </aside>
+
+            <aside id="notificationPanel" class="panel-card p-6">
+              <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+                <h2 class="section-heading"><i class="fa-solid fa-bell text-blue-400"></i>Bildirimler</h2>
+                <span id="notificationBadge" class="badge">0 yeni</span>
+              </div>
+              <ul id="notificationList" class="mt-5 space-y-3"></ul>
+            </aside>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <script src="assets/js/api.js?v=20260622-authnodemo"></script>
-  <script src="assets/js/main.js?v=20260622-authnodemo"></script>
+  <script src="assets/js/api.js?v=20260622-notifications2"></script>
+  <script src="assets/js/main.js?v=20260622-notifications2"></script>
 </body>
 </html>

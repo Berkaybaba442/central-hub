@@ -186,6 +186,13 @@ function setupDashboardTabs() {
       });
     });
   });
+
+  qsa('[data-scroll-notifications]').forEach(button => {
+    button.addEventListener('click', () => {
+      const panel = qs('#notificationPanel');
+      if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 }
 
 async function initDashboard() {
@@ -294,10 +301,14 @@ async function showDashboard(user) {
 
 function renderDashboardNotifications(notifications, unreadCount) {
   const badge = qs('#notificationBadge');
+  const topBadge = qs('#topNotificationBadge');
   const list = qs('#notificationList');
   if (badge) {
-    badge.textContent = unreadCount;
-    badge.classList.toggle('hidden', !unreadCount);
+    badge.textContent = `${unreadCount} yeni`;
+  }
+  if (topBadge) {
+    topBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+    topBadge.classList.toggle('hidden', !unreadCount);
   }
   if (!list) return;
 
