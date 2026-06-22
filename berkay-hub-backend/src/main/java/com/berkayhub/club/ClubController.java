@@ -1,10 +1,22 @@
 package com.berkayhub.club;
 
+import com.berkayhub.auth.AppUser;
+import com.berkayhub.auth.AppUserRepository;
+import com.berkayhub.auth.UserRole;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.berkayhub.club.ClubDtos.*;
@@ -15,52 +27,284 @@ public class ClubController {
     private final ReportRepository reportRepository;
     private final ClubTaskRepository taskRepository;
     private final TeamAssignmentRepository assignmentRepository;
+    private final ClubNotificationRepository notificationRepository;
+    private final AppUserRepository userRepository;
+    private final ReportFileStorage reportFileStorage;
 
-    public ClubController(ReportRepository reportRepository, ClubTaskRepository taskRepository, TeamAssignmentRepository assignmentRepository) {
+    public ClubController(
+            ReportRepository reportRepository,
+            ClubTaskRepository taskRepository,
+            TeamAssignmentRepository assignmentRepository,
+            ClubNotificationRepository notificationRepository,
+            AppUserRepository userRepository,
+            ReportFileStorage reportFileStorage
+    ) {
         this.reportRepository = reportRepository;
         this.taskRepository = taskRepository;
         this.assignmentRepository = assignmentRepository;
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.reportFileStorage = reportFileStorage;
     }
 
     @GetMapping("/overview")
-    public ClubOverview overview() {
-        List<Report> reports = reportRepository.findAllByOrderByCreatedAtDesc();
-        List<ClubTask> tasks = taskRepository.findAllByOrderByCompletedAscCreatedAtDesc();
+    public ClubOverview overview(Authentication authentication) {
+        AppUser user = currentUser(authentication);
+        List<Report> reports = reportsFor(user);
+        List<ClubTask> tasks = tasksFor(user);
         List<TeamAssignment> assignments = assignmentRepository.findAll();
-        return new ClubOverview(reports.size(), taskRepository.countByCompletedFalse(), assignments.size(), reports, tasks, assignments);
+        List<ClubNotification> notifications = notificationRepository.findAllByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail());
+        long openTaskCount = isAdmin(user)
+                ? taskRepository.countByCompletedFalse()
+                : taskRepository.countByAssigneeEmailIgnoreCaseAndCompletedFalse(user.getEmail());
+        long unreadCount = notificationRepository.countByRecipientEmailIgnoreCaseAndReadFlagFalse(user.getEmail());
+        return new ClubOverview(reports.size(), openTaskCount, assignments.size(), reports, tasks, assignments, notifications, unreadCount);
     }
 
     @GetMapping("/reports")
-    public List<Report> reports() { return reportRepository.findAllByOrderByCreatedAtDesc(); }
+    public List<Report> reports(Authentication authentication) {
+        return reportsFor(currentUser(authentication));
+    }
 
     @PostMapping("/reports")
     @ResponseStatus(HttpStatus.CREATED)
-    public Report createReport(@Valid @RequestBody CreateReportRequest request) {
-        return reportRepository.save(new Report(request.title(), request.summary()));
+    @PreAuthorize("hasRole('ADMIN')")
+    public Report createReport(@Valid @RequestBody CreateReportRequest request, Authentication authentication) {
+        AppUser admin = currentUser(authentication);
+        Report report = new Report(request.title().trim(), request.summary().trim());
+        report.setAuthorEmail(admin.getEmail());
+        report.setAuthorName(admin.getDisplayName());
+        report.setStatus(ReportStatus.PENDING);
+        return saveReportWithFile(report);
+    }
+
+    @GetMapping("/reports/{id}/download")
+    public ResponseEntity<Resource> downloadReport(@PathVariable Long id, Authentication authentication) {
+        AppUser user = currentUser(authentication);
+        Report report = reportRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rapor bulunamadı."));
+        if (!isAdmin(user) && !sameEmail(user.getEmail(), report.getAuthorEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu raporu indirme yetkin yok.");
+        }
+        if (report.getFilePath() == null || report.getFilePath().isBlank()) {
+            report = saveReportWithFile(report);
+        }
+
+        Resource resource = reportFileStorage.load(report);
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(report.getFileName() == null ? "rapor.md" : report.getFileName(), StandardCharsets.UTF_8)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType("text/markdown"))
+                .body(resource);
+    }
+
+    @PutMapping("/reports/{id}/review")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Report reviewReport(@PathVariable Long id, @Valid @RequestBody ReviewReportRequest request, Authentication authentication) {
+        if (request.status() != ReportStatus.APPROVED && request.status() != ReportStatus.REJECTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rapor sadece kabul veya red durumuna alınabilir.");
+        }
+
+        AppUser admin = currentUser(authentication);
+        Report report = reportRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rapor bulunamadı."));
+        report.setStatus(request.status());
+        report.setReviewNote(request.note());
+        report.setReviewedByEmail(admin.getEmail());
+        report.setReviewedByName(admin.getDisplayName());
+        report.setReviewedAt(LocalDateTime.now());
+        Report saved = saveReportWithFile(report);
+
+        if (saved.getAuthorEmail() != null && !sameEmail(saved.getAuthorEmail(), admin.getEmail())) {
+            String result = saved.getStatus() == ReportStatus.APPROVED ? "kabul edildi" : "reddedildi";
+            notifyUser(
+                    saved.getAuthorEmail(),
+                    "Rapor incelemesi tamamlandı",
+                    "\"%s\" raporun admin tarafından %s.".formatted(saved.getTitle(), result),
+                    "REPORT_REVIEWED",
+                    "modules/club-management/index.html",
+                    saved.getTaskId(),
+                    saved.getId()
+            );
+        }
+        return saved;
     }
 
     @GetMapping("/tasks")
-    public List<ClubTask> tasks() { return taskRepository.findAllByOrderByCompletedAscCreatedAtDesc(); }
+    public List<ClubTask> tasks(Authentication authentication) {
+        return tasksFor(currentUser(authentication));
+    }
 
     @PostMapping("/tasks")
     @ResponseStatus(HttpStatus.CREATED)
-    public ClubTask createTask(@Valid @RequestBody CreateTaskRequest request) {
-        return taskRepository.save(new ClubTask(request.title(), request.owner(), request.priority()));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ClubTask createTask(@Valid @RequestBody CreateTaskRequest request, Authentication authentication) {
+        AppUser admin = currentUser(authentication);
+        String assigneeEmail = clean(request.assigneeEmail());
+        if (assigneeEmail == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Görev atanacak üye seçilmeli.");
+        }
+
+        AppUser assignee = userRepository.findByEmailIgnoreCase(assigneeEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev atanacak üye bulunamadı."));
+        String owner = clean(request.owner()) == null ? assignee.getDisplayName() : clean(request.owner());
+        ClubTask task = new ClubTask(
+                request.title().trim(),
+                owner,
+                assignee.getEmail(),
+                admin.getEmail(),
+                admin.getDisplayName(),
+                request.priority(),
+                clean(request.description())
+        );
+        ClubTask saved = taskRepository.save(task);
+        notifyUser(
+                assignee.getEmail(),
+                "Yeni görev atandı",
+                "\"%s\" görevi %s tarafından sana atandı.".formatted(saved.getTitle(), admin.getDisplayName()),
+                "TASK_ASSIGNED",
+                "modules/club-management/index.html",
+                saved.getId(),
+                null
+        );
+        return saved;
     }
 
     @PutMapping("/tasks/{id}/toggle")
-    public ClubTask toggleTask(@PathVariable Long id) {
-        ClubTask task = taskRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı."));
+    public ClubTask toggleTask(@PathVariable Long id, Authentication authentication) {
+        AppUser user = currentUser(authentication);
+        ClubTask task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı."));
+        if (!isAdmin(user) && !ownsTask(user, task)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu görevi güncelleme yetkin yok.");
+        }
+
         task.setCompleted(!task.isCompleted());
-        return taskRepository.save(task);
+        ClubTask saved = taskRepository.save(task);
+        if (saved.isCompleted() && !isAdmin(user)) {
+            notifyAdmins(
+                    "Görev tamamlandı",
+                    "\"%s\" görevi %s tarafından tamamlandı.".formatted(saved.getTitle(), user.getDisplayName()),
+                    "TASK_COMPLETED",
+                    saved.getId(),
+                    null
+            );
+        }
+        return saved;
+    }
+
+    @PostMapping("/tasks/{id}/reports")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Report submitTaskReport(@PathVariable Long id, @Valid @RequestBody SubmitTaskReportRequest request, Authentication authentication) {
+        AppUser user = currentUser(authentication);
+        ClubTask task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı."));
+        if (!isAdmin(user) && !ownsTask(user, task)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu görev için rapor gönderme yetkin yok.");
+        }
+
+        Report report = new Report(request.title().trim(), request.summary().trim());
+        report.setTaskId(task.getId());
+        report.setTaskTitle(task.getTitle());
+        report.setAuthorEmail(user.getEmail());
+        report.setAuthorName(user.getDisplayName());
+        report.setStatus(ReportStatus.PENDING);
+        Report saved = saveReportWithFile(report);
+
+        notifyAdmins(
+                "Yeni rapor bekliyor",
+                "%s, \"%s\" görevi için rapor gönderdi.".formatted(user.getDisplayName(), task.getTitle()),
+                "REPORT_SUBMITTED",
+                task.getId(),
+                saved.getId()
+        );
+        return saved;
+    }
+
+    @GetMapping("/notifications")
+    public List<ClubNotification> notifications(Authentication authentication) {
+        AppUser user = currentUser(authentication);
+        return notificationRepository.findAllByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail());
+    }
+
+    @PutMapping("/notifications/{id}/read")
+    public ClubNotification markNotificationRead(@PathVariable Long id, Authentication authentication) {
+        AppUser user = currentUser(authentication);
+        ClubNotification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bildirim bulunamadı."));
+        if (!sameEmail(user.getEmail(), notification.getRecipientEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu bildirimi güncelleme yetkin yok.");
+        }
+
+        notification.setReadFlag(true);
+        notification.setReadAt(LocalDateTime.now());
+        return notificationRepository.save(notification);
     }
 
     @GetMapping("/assignments")
-    public List<TeamAssignment> assignments() { return assignmentRepository.findAll(); }
+    public List<TeamAssignment> assignments() {
+        return assignmentRepository.findAll();
+    }
 
     @PostMapping("/assignments")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     public TeamAssignment createAssignment(@Valid @RequestBody CreateAssignmentRequest request) {
         return assignmentRepository.save(new TeamAssignment(request.memberName(), request.teamName(), request.responsibility()));
+    }
+
+    private Report saveReportWithFile(Report report) {
+        Report saved = reportRepository.save(report);
+        reportFileStorage.writeReportFile(saved);
+        return reportRepository.save(saved);
+    }
+
+    private List<Report> reportsFor(AppUser user) {
+        if (isAdmin(user)) return reportRepository.findAllByOrderByCreatedAtDesc();
+        return reportRepository.findAllByAuthorEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail());
+    }
+
+    private List<ClubTask> tasksFor(AppUser user) {
+        if (isAdmin(user)) return taskRepository.findAllByOrderByCompletedAscCreatedAtDesc();
+        return taskRepository.findAllByAssigneeEmailIgnoreCaseOrderByCompletedAscCreatedAtDesc(user.getEmail());
+    }
+
+    private AppUser currentUser(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Oturum bulunamadı.");
+        }
+        return userRepository.findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Kullanıcı bulunamadı."));
+    }
+
+    private boolean isAdmin(AppUser user) {
+        return user.getRole() == UserRole.ADMIN;
+    }
+
+    private boolean ownsTask(AppUser user, ClubTask task) {
+        return sameEmail(user.getEmail(), task.getAssigneeEmail());
+    }
+
+    private void notifyAdmins(String title, String message, String type, Long taskId, Long reportId) {
+        userRepository.findAllByRole(UserRole.ADMIN).forEach(admin ->
+                notifyUser(admin.getEmail(), title, message, type, "modules/club-management/index.html", taskId, reportId)
+        );
+    }
+
+    private void notifyUser(String recipientEmail, String title, String message, String type, String link, Long taskId, Long reportId) {
+        if (recipientEmail == null || recipientEmail.isBlank()) return;
+        notificationRepository.save(new ClubNotification(recipientEmail, title, message, type, link, taskId, reportId));
+    }
+
+    private boolean sameEmail(String left, String right) {
+        return left != null && right != null && left.equalsIgnoreCase(right);
+    }
+
+    private String clean(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 }

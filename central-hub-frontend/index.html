@@ -222,10 +222,21 @@
 
           <aside class="panel-card p-6">
             <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
-              <h2 class="section-heading"><i class="fa-solid fa-clock-rotate-left text-blue-400"></i>Son Aktiviteler</h2>
+              <div class="flex flex-wrap gap-2">
+                <button class="tab-button active" type="button" data-dashboard-tab="activity">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  Son Aktiviteler
+                </button>
+                <button class="tab-button" type="button" data-dashboard-tab="notifications">
+                  <i class="fa-solid fa-bell"></i>
+                  Bildirimler
+                  <span id="notificationBadge" class="badge hidden">0</span>
+                </button>
+              </div>
               <span class="badge">Canlı özet</span>
             </div>
-            <ul id="activityList" class="mt-5 space-y-3"></ul>
+            <ul id="activityList" data-dashboard-panel="activity" class="mt-5 space-y-3"></ul>
+            <ul id="notificationList" data-dashboard-panel="notifications" class="mt-5 hidden space-y-3"></ul>
           </aside>
         </div>
       </div>

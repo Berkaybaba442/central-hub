@@ -106,30 +106,59 @@
 
     <section id="club-tab-work" data-club-panel="work" class="mt-6 hidden">
       <div class="grid gap-6 lg:grid-cols-[0.88fr_1.12fr]">
-        <aside class="panel-card p-6">
-          <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
-            <h2 class="section-heading"><i class="fa-solid fa-pen-to-square text-blue-400"></i>Rapor & Görev Atama</h2>
-            <span class="badge">Profil bağlantılı</span>
-          </div>
-          <form id="memberWorkForm" class="mt-5 space-y-3">
-            <label class="block">
-              <span class="mb-2 block text-sm font-bold text-slate-300">Seçili üye</span>
-              <input id="selectedMemberInput" class="input-dark" value="Önce bir üye seç" readonly />
-            </label>
-            <input name="taskTitle" class="input-dark" placeholder="Görev başlığı" required />
-            <select name="priority" class="input-dark">
-              <option value="HIGH">Yüksek öncelik</option>
-              <option value="MEDIUM" selected>Orta öncelik</option>
-              <option value="LOW">Düşük öncelik</option>
-            </select>
-            <input name="reportTitle" class="input-dark" placeholder="Rapor başlığı" required />
-            <textarea name="summary" class="input-dark min-h-28" placeholder="Görev bağlamı ve rapor özeti" required></textarea>
-            <button class="btn-primary w-full" type="submit">
-              <i class="fa-solid fa-paper-plane"></i>
-              Görev Ata ve Raporla
-            </button>
-          </form>
-        </aside>
+        <div class="space-y-6">
+          <aside id="adminTaskPanel" class="panel-card p-6" data-role="ADMIN">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+              <h2 class="section-heading"><i class="fa-solid fa-pen-to-square text-blue-400"></i>Görev Atama</h2>
+              <span class="badge">Admin</span>
+            </div>
+            <form id="memberWorkForm" class="mt-5 space-y-3">
+              <label class="block">
+                <span class="mb-2 block text-sm font-bold text-slate-300">Profil seçimi</span>
+                <input id="selectedMemberInput" class="input-dark" value="Önce bir üye seç" readonly />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-sm font-bold text-slate-300">Görev atanacak üye</span>
+                <select id="taskAssigneeSelect" name="assigneeEmail" class="input-dark" required></select>
+              </label>
+              <input name="taskTitle" class="input-dark" placeholder="Görev başlığı" required />
+              <select name="priority" class="input-dark">
+                <option value="HIGH">Yüksek öncelik</option>
+                <option value="MEDIUM" selected>Orta öncelik</option>
+                <option value="LOW">Düşük öncelik</option>
+              </select>
+              <textarea name="description" class="input-dark min-h-28" placeholder="Görev açıklaması ve beklenen çıktı" required></textarea>
+              <button class="btn-primary w-full" type="submit">
+                <i class="fa-solid fa-paper-plane"></i>
+                Görev Ata
+              </button>
+            </form>
+          </aside>
+
+          <aside id="taskAssignmentLocked" class="panel-card p-6 hidden">
+            <div class="text-center">
+              <span class="icon-box yellow mx-auto"><i class="fa-solid fa-bell"></i></span>
+              <h2 class="mt-4 text-xl font-black text-white">Atanan Görevlerini Takip Et</h2>
+              <p class="mt-2 text-sm leading-6 text-slate-400">Admin tarafından atanan görevler burada görünür; raporunu dosya olarak gönderebilirsin.</p>
+            </div>
+          </aside>
+
+          <aside class="panel-card p-6">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-4">
+              <h2 class="section-heading"><i class="fa-solid fa-file-arrow-up text-blue-400"></i>Rapor Gönder</h2>
+              <span class="badge">Dosya çıktısı</span>
+            </div>
+            <form id="taskReportForm" class="mt-5 space-y-3">
+              <select id="reportTaskSelect" name="taskId" class="input-dark" required></select>
+              <input name="reportTitle" class="input-dark" placeholder="Rapor başlığı" required />
+              <textarea name="summary" class="input-dark min-h-28" placeholder="Yapılan iş, çıktı ve notlar" required></textarea>
+              <button class="btn-primary w-full" type="submit">
+                <i class="fa-solid fa-file-arrow-up"></i>
+                Rapor Dosyası Gönder
+              </button>
+            </form>
+          </aside>
+        </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
           <section class="panel-card p-6">

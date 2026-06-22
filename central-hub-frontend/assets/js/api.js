@@ -5,15 +5,7 @@ const REGISTERED_USERS_STORAGE_KEY = 'berkayHubRegisteredUsers';
 const DEFAULT_API_BASE_URL = isLocalDevelopmentHost() ? 'http://localhost:8080/api' : '/api';
 
 const APP_ROLES = [
-  { value: 'UYE', label: 'Üye' },
-  { value: 'TAKIM_UYESI', label: 'Takım Üyesi' },
-  { value: 'TAKIM_KAPTANI', label: 'Takım Kaptanı' },
-  { value: 'DEPARTMAN_BASKAN_YARDIMCISI', label: 'Departman Başkan Yardımcısı' },
-  { value: 'DEPARTMAN_BASKANI', label: 'Departman Başkanı' },
-  { value: 'YONETIM_KURULU_UYESI', label: 'Yönetim Kurulu Üyesi' },
-  { value: 'KULUP_BASKAN_YARDIMCISI', label: 'Kulüp Başkan Yardımcısı' },
-  { value: 'KULUP_BASKANI', label: 'Kulüp Başkanı' },
-  { value: 'DENETIM_KURULU_UYESI', label: 'Denetim Kurulu Üyesi' },
+  { value: 'USER', label: 'Üye' },
   { value: 'ADMIN', label: 'Admin' }
 ];
 
@@ -97,7 +89,7 @@ function publicUser(user) {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
-    role: user.role || 'UYE'
+    role: user.role || 'USER'
   };
 }
 
@@ -125,6 +117,52 @@ async function fetchJson(path, options = {}) {
 
   if (response.status === 204) return null;
   return response.json();
+}
+
+async function fetchBlob(path, options = {}) {
+  const token = getToken();
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...options,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  if (!response.ok) {
+    let message = `API hatası: ${response.status}`;
+    try {
+      const error = await response.json();
+      message = error.message || error.error || message;
+    } catch {
+      // ignore json parse fail
+    }
+    throw markApiError(new Error(message), response.status);
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: filenameFromDisposition(response.headers.get('Content-Disposition'))
+  };
+}
+
+function filenameFromDisposition(value) {
+  if (!value) return null;
+  const encoded = value.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encoded) return decodeURIComponent(encoded[1].replace(/"/g, ''));
+  const plain = value.match(/filename="?([^";]+)"?/i);
+  return plain ? plain[1] : null;
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename || 'rapor.md';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 async function login(email, password) {
@@ -190,25 +228,28 @@ const BerkayApi = {
   signup,
   logout,
   me,
-  updateUserRole(email, role) {
-    if (String(email).toLowerCase() === 'admin@berkayhub.local' && role !== 'ADMIN') {
-      throw new Error('Varsayılan admin hesabının Admin rolü kaldırılamaz.');
-    }
-
-    const users = getRegisteredUsers();
-    const user = users.find(item => String(item.email).toLowerCase() === String(email).toLowerCase());
-    if (!user) throw new Error('Kullanıcı bulunamadı.');
-    user.role = role;
-    saveRegisteredUsers(users);
-
+  async getUsers() {
+    return fetchJson('/auth/users');
+  },
+  async updateUserRole(id, role) {
+    const user = await fetchJson(`/auth/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role })
+    });
     const stored = getStoredUser();
-    if (stored && String(stored.email).toLowerCase() === String(email).toLowerCase()) {
-      setSession(getToken(), publicUser(user));
+    if (stored && String(stored.id) === String(user.id)) {
+      setSession(getToken(), user);
     }
-    return publicUser(user);
+    return user;
   },
   async getClubOverview() {
     return fetchJson('/club/overview');
+  },
+  async getNotifications() {
+    return fetchJson('/club/notifications');
+  },
+  async markNotificationRead(id) {
+    return fetchJson(`/club/notifications/${id}/read`, { method: 'PUT' });
   },
   async createReport(payload) {
     return fetchJson('/club/reports', { method: 'POST', body: JSON.stringify(payload) });
@@ -218,6 +259,16 @@ const BerkayApi = {
   },
   async toggleTask(id) {
     return fetchJson(`/club/tasks/${id}/toggle`, { method: 'PUT' });
+  },
+  async submitTaskReport(taskId, payload) {
+    return fetchJson(`/club/tasks/${taskId}/reports`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  async reviewReport(id, payload) {
+    return fetchJson(`/club/reports/${id}/review`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  async downloadReport(id) {
+    const data = await fetchBlob(`/club/reports/${id}/download`);
+    saveBlob(data.blob, data.filename || `rapor-${id}.md`);
   },
   async createAssignment(payload) {
     return fetchJson('/club/assignments', { method: 'POST', body: JSON.stringify(payload) });

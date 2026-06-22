@@ -27,6 +27,35 @@ function priorityBadge(priority) {
   return map[priority] || map.MEDIUM;
 }
 
+function reportStatusLabel(status) {
+  const map = {
+    PENDING: 'İncelemede',
+    APPROVED: 'Kabul edildi',
+    REJECTED: 'Reddedildi'
+  };
+  return map[status] || map.PENDING;
+}
+
+function reportStatusBadge(status) {
+  if (status === 'APPROVED') return 'status-pill';
+  if (status === 'REJECTED') return 'status-pill danger';
+  return 'status-pill warning';
+}
+
+function notificationIcon(type) {
+  const map = {
+    TASK_ASSIGNED: 'fa-list-check',
+    TASK_COMPLETED: 'fa-circle-check',
+    REPORT_SUBMITTED: 'fa-file-arrow-up',
+    REPORT_REVIEWED: 'fa-clipboard-check'
+  };
+  return map[type] || 'fa-bell';
+}
+
+function sameEmail(left, right) {
+  return String(left || '').toLowerCase() === String(right || '').toLowerCase();
+}
+
 function roleLabel(role) {
   const roles = (window.BerkayApi && window.BerkayApi.roles) || [];
   const found = roles.find(item => item.value === role);
@@ -145,10 +174,25 @@ function setupAuthTabs() {
   });
 }
 
+function setupDashboardTabs() {
+  qsa('[data-dashboard-tab]').forEach(button => {
+    button.addEventListener('click', () => {
+      const tab = button.dataset.dashboardTab;
+      qsa('[data-dashboard-tab]').forEach(item => {
+        item.classList.toggle('active', item.dataset.dashboardTab === tab);
+      });
+      qsa('[data-dashboard-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.dashboardPanel !== tab);
+      });
+    });
+  });
+}
+
 async function initDashboard() {
   setupApiSettings();
   setupLogoutButtons();
   setupAuthTabs();
+  setupDashboardTabs();
 
   const storedUser = await window.BerkayApi.me();
   if (storedUser) {
@@ -244,12 +288,70 @@ async function showDashboard(user) {
       </li>
     `).join('');
   }
+
+  renderDashboardNotifications(club.notifications || [], club.unreadNotificationCount || 0);
+}
+
+function renderDashboardNotifications(notifications, unreadCount) {
+  const badge = qs('#notificationBadge');
+  const list = qs('#notificationList');
+  if (badge) {
+    badge.textContent = unreadCount;
+    badge.classList.toggle('hidden', !unreadCount);
+  }
+  if (!list) return;
+
+  if (!notifications.length) {
+    list.innerHTML = `
+      <li class="data-card text-sm text-slate-400">
+        Şu an yeni bildirim yok.
+      </li>
+    `;
+    return;
+  }
+
+  list.innerHTML = notifications.slice(0, 8).map(item => `
+    <li class="data-card ${item.readFlag ? 'opacity-70' : ''}">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400">
+            <i class="fa-solid ${notificationIcon(item.type)} text-sm"></i>
+          </span>
+          <div>
+            <strong class="text-sm text-white">${escapeHtml(item.title)}</strong>
+            <p class="mt-2 text-sm leading-6 text-slate-400">${escapeHtml(item.message)}</p>
+          </div>
+        </div>
+        <span class="shrink-0 text-xs text-slate-400">${formatDateTime(item.createdAt)}</span>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        ${item.link ? `<button class="btn-secondary" type="button" data-open-notification="${item.id}" data-notification-link="${escapeHtml(item.link)}"><i class="fa-solid fa-arrow-right"></i>Aç</button>` : ''}
+        ${item.readFlag ? '' : `<button class="btn-secondary" type="button" data-mark-notification="${item.id}"><i class="fa-solid fa-check"></i>Okundu</button>`}
+      </div>
+    </li>
+  `).join('');
+
+  qsa('[data-mark-notification]', list).forEach(button => {
+    button.addEventListener('click', async () => {
+      await window.BerkayApi.markNotificationRead(button.dataset.markNotification);
+      const notifications = await window.BerkayApi.getNotifications();
+      renderDashboardNotifications(notifications, notifications.filter(item => !item.readFlag).length);
+    });
+  });
+
+  qsa('[data-open-notification]', list).forEach(button => {
+    button.addEventListener('click', async () => {
+      await window.BerkayApi.markNotificationRead(button.dataset.openNotification);
+      window.location.href = button.dataset.notificationLink;
+    });
+  });
 }
 
 const CLUB_TEAMS_STORAGE_KEY = 'berkayHubClubTeams';
 let clubTeams = [];
 let selectedClubMemberId = null;
 let currentClubUser = null;
+let clubUsers = [];
 
 function createLocalId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -356,11 +458,18 @@ function renderTeamControls() {
   if (removeTeamSelect) removeTeamSelect.innerHTML = options || '<option value="">Takım yok</option>';
   if (roleTeamSelect) roleTeamSelect.innerHTML = '<option value="">Takıma bağlama</option>' + options;
 
+  const assignableUsers = clubUsers.filter(user => user.role !== 'ADMIN');
+  const taskAssigneeSelect = qs('#taskAssigneeSelect');
+  if (taskAssigneeSelect) {
+    taskAssigneeSelect.innerHTML = assignableUsers.map(user => `
+      <option value="${escapeHtml(user.email)}">${escapeHtml(user.displayName || user.email)} - ${escapeHtml(user.email)}</option>
+    `).join('') || '<option value="">Üye bulunamadı</option>';
+  }
+
   const roleUserSelect = qs('#roleUserSelect');
-  if (roleUserSelect && window.BerkayApi && window.BerkayApi.getRegisteredUsers) {
-    const users = window.BerkayApi.getRegisteredUsers();
-    roleUserSelect.innerHTML = users.map(user => `
-      <option value="${escapeHtml(user.email)}">${escapeHtml(user.displayName || user.email)} - ${escapeHtml(roleLabel(user.role))}</option>
+  if (roleUserSelect) {
+    roleUserSelect.innerHTML = clubUsers.map(user => `
+      <option value="${escapeHtml(user.id)}">${escapeHtml(user.displayName || user.email)} - ${escapeHtml(roleLabel(user.role))}</option>
     `).join('');
   }
 
@@ -375,16 +484,24 @@ function renderTeamControls() {
 function renderRoleAssignmentAccess() {
   const form = qs('#roleAssignmentForm');
   const locked = qs('#roleAssignmentLocked');
+  const taskPanel = qs('#adminTaskPanel');
+  const taskLocked = qs('#taskAssignmentLocked');
   const isAdmin = currentClubUser && currentClubUser.role === 'ADMIN';
   if (form) form.classList.toggle('hidden', !isAdmin);
   if (locked) locked.classList.toggle('hidden', isAdmin);
+  if (taskPanel) taskPanel.classList.toggle('hidden', !isAdmin);
+  if (taskLocked) taskLocked.classList.toggle('hidden', isAdmin);
 }
 
 function updateSelectedMemberInput() {
   const input = qs('#selectedMemberInput');
-  if (!input) return;
   const selected = syncSelectedClubMember();
-  input.value = selected ? `${selected.member.name} / ${selected.team.name}` : 'Önce bir üye seç';
+  if (input) input.value = selected ? `${selected.member.name} / ${selected.team.name}` : 'Önce bir üye seç';
+
+  const taskAssigneeSelect = qs('#taskAssigneeSelect');
+  if (taskAssigneeSelect && selected && selected.member.email) {
+    taskAssigneeSelect.value = selected.member.email;
+  }
 }
 
 function renderClubTeams(data) {
@@ -411,7 +528,10 @@ function renderClubTeams(data) {
       </div>
       <div class="member-grid">
         ${(team.members || []).map(member => {
-          const taskCount = (data.tasks || []).filter(task => task.owner === member.name && !task.completed).length;
+          const taskCount = (data.tasks || []).filter(task => {
+            const sameMember = member.email ? sameEmail(task.assigneeEmail, member.email) : task.owner === member.name;
+            return sameMember && !task.completed;
+          }).length;
           return `
             <button class="member-card ${selectedClubMemberId === member.id ? 'active' : ''}" type="button" data-select-member="${escapeHtml(member.id)}">
               <span class="avatar">${escapeHtml(memberInitials(member.name))}</span>
@@ -455,12 +575,18 @@ function renderMemberProfile(data) {
   }
 
   const { team, member } = selected;
-  const memberTasks = (data.tasks || []).filter(task => task.owner === member.name);
+  const memberTasks = (data.tasks || []).filter(task => member.email ? sameEmail(task.assigneeEmail, member.email) : task.owner === member.name);
   const openTasks = memberTasks.filter(task => !task.completed);
   const memberReports = (data.reports || []).filter(report => {
-    const haystack = `${report.title || ''} ${report.summary || ''}`;
+    const haystack = `${report.title || ''} ${report.summary || ''} ${report.authorEmail || ''}`;
     return haystack.includes(member.name) || haystack.includes(team.name);
   });
+  const adminAction = currentClubUser && currentClubUser.role === 'ADMIN' ? `
+    <button class="btn-primary mt-6 w-full" type="button" data-open-work>
+      <i class="fa-solid fa-paper-plane"></i>
+      Bu üyeye görev ata
+    </button>
+  ` : '';
 
   profile.innerHTML = `
     <div class="flex items-start gap-4 border-b border-slate-700/70 pb-5">
@@ -495,10 +621,7 @@ function renderMemberProfile(data) {
       </div>
     </div>
 
-    <button class="btn-primary mt-6 w-full" type="button" data-open-work>
-      <i class="fa-solid fa-paper-plane"></i>
-      Bu üyeye görev ata
-    </button>
+    ${adminAction}
   `;
 
   const openWork = qs('[data-open-work]', profile);
@@ -514,9 +637,20 @@ function renderMemberProfile(data) {
 }
 
 function renderClubWorkLists(data) {
+  const isAdmin = currentClubUser && currentClubUser.role === 'ADMIN';
+  const tasks = data.tasks || [];
+  const reports = data.reports || [];
+
+  const reportTaskSelect = qs('#reportTaskSelect');
+  if (reportTaskSelect) {
+    reportTaskSelect.innerHTML = tasks.map(task => `
+      <option value="${escapeHtml(task.id)}">${escapeHtml(task.title)} ${task.completed ? '(tamamlandı)' : ''}</option>
+    `).join('') || '<option value="">Atanmış görev yok</option>';
+  }
+
   const taskList = qs('#taskList');
   if (taskList) {
-    taskList.innerHTML = (data.tasks || []).map(task => `
+    taskList.innerHTML = tasks.map(task => `
       <li class="data-card">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3">
@@ -524,14 +658,25 @@ function renderClubWorkLists(data) {
               <i class="fa-solid ${task.completed ? 'fa-check' : 'fa-list-check'} text-sm"></i>
             </span>
             <div>
-              <button class="text-left font-bold ${task.completed ? 'line-through text-slate-500' : 'text-slate-100'}" data-toggle-task="${task.id}">${escapeHtml(task.title)}</button>
-              <p class="mt-1 text-sm text-slate-400">Sorumlu: ${escapeHtml(task.owner || '-')}</p>
+              <button class="text-left font-bold ${task.completed ? 'line-through text-slate-500' : 'text-slate-100'}" data-toggle-task="${task.id}">
+                ${escapeHtml(task.title)}
+              </button>
+              <p class="mt-1 text-sm text-slate-400">Atanan: ${escapeHtml(task.owner || task.assigneeEmail || '-')}</p>
+              ${task.assignedByName ? `<p class="mt-1 text-xs text-slate-500">Atayan: ${escapeHtml(task.assignedByName)}</p>` : ''}
             </div>
           </div>
           <span class="badge border ${priorityBadge(task.priority)}">${escapeHtml(task.priority || 'MEDIUM')}</span>
         </div>
+        ${task.description ? `<p class="mt-3 text-sm leading-6 text-slate-400">${escapeHtml(task.description)}</p>` : ''}
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button class="btn-secondary" type="button" data-toggle-task="${task.id}">
+            <i class="fa-solid ${task.completed ? 'fa-rotate-left' : 'fa-check'}"></i>
+            ${task.completed ? 'Geri Al' : 'Tamamlandı'}
+          </button>
+          ${!isAdmin ? `<button class="btn-secondary" type="button" data-open-report-task="${task.id}"><i class="fa-solid fa-file-arrow-up"></i>Raporla</button>` : ''}
+        </div>
       </li>
-    `).join('');
+    `).join('') || '<li class="data-card text-sm text-slate-400">Görev bulunamadı.</li>';
 
     qsa('[data-toggle-task]').forEach(button => {
       button.addEventListener('click', async () => {
@@ -539,24 +684,73 @@ function renderClubWorkLists(data) {
         await renderClub();
       });
     });
+
+    qsa('[data-open-report-task]').forEach(button => {
+      button.addEventListener('click', () => {
+        switchClubTab('work');
+        if (reportTaskSelect) reportTaskSelect.value = button.dataset.openReportTask;
+        const reportTitleInput = qs('#taskReportForm input[name="reportTitle"]');
+        if (reportTitleInput) reportTitleInput.focus();
+      });
+    });
   }
 
   const reportList = qs('#reportList');
   if (reportList) {
-    reportList.innerHTML = (data.reports || []).map(report => `
+    reportList.innerHTML = reports.map(report => `
       <article class="data-card">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3">
             <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400">
               <i class="fa-solid fa-file-lines text-sm"></i>
             </span>
-            <h3 class="font-bold text-white">${escapeHtml(report.title)}</h3>
+            <div>
+              <h3 class="font-bold text-white">${escapeHtml(report.title)}</h3>
+              <p class="mt-1 text-xs text-slate-500">${escapeHtml(report.taskTitle || 'Genel rapor')}</p>
+            </div>
           </div>
-          <span class="text-xs text-slate-400">${formatDateTime(report.createdAt)}</span>
+          <span class="${reportStatusBadge(report.status)}">${reportStatusLabel(report.status)}</span>
         </div>
         <p class="mt-3 text-sm leading-6 text-slate-400">${escapeHtml(report.summary)}</p>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <span class="text-xs text-slate-400">${formatDateTime(report.createdAt)}${report.authorName ? ` · ${escapeHtml(report.authorName)}` : ''}</span>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn-secondary" type="button" data-download-report="${report.id}">
+              <i class="fa-solid fa-download"></i>
+              İndir
+            </button>
+            ${isAdmin && report.status === 'PENDING' ? `
+              <button class="btn-secondary border-emerald-500/30 text-emerald-200" type="button" data-review-report="${report.id}" data-review-status="APPROVED">
+                <i class="fa-solid fa-check"></i>
+                Kabul
+              </button>
+              <button class="btn-secondary border-red-500/30 text-red-200" type="button" data-review-report="${report.id}" data-review-status="REJECTED">
+                <i class="fa-solid fa-xmark"></i>
+                Red
+              </button>
+            ` : ''}
+          </div>
+        </div>
+        ${report.reviewNote ? `<p class="mt-3 text-xs leading-5 text-slate-500">İnceleme notu: ${escapeHtml(report.reviewNote)}</p>` : ''}
       </article>
-    `).join('');
+    `).join('') || '<div class="data-card text-sm text-slate-400">Rapor bulunamadı.</div>';
+
+    qsa('[data-download-report]', reportList).forEach(button => {
+      button.addEventListener('click', async () => {
+        await window.BerkayApi.downloadReport(button.dataset.downloadReport);
+      });
+    });
+
+    qsa('[data-review-report]', reportList).forEach(button => {
+      button.addEventListener('click', async () => {
+        await window.BerkayApi.reviewReport(button.dataset.reviewReport, {
+          status: button.dataset.reviewStatus,
+          note: ''
+        });
+        toast(button.dataset.reviewStatus === 'APPROVED' ? 'Rapor kabul edildi.' : 'Rapor reddedildi.');
+        await renderClub();
+      });
+    });
   }
 }
 
@@ -566,32 +760,55 @@ function setupClubForms() {
     memberWorkForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const formEl = event.currentTarget;
-      const selected = syncSelectedClubMember();
-      if (!selected) {
-        toast('Görev atamak için önce takım panosundan bir üye seç.', 'error');
+      if (!currentClubUser || currentClubUser.role !== 'ADMIN') {
+        toast('Görev atamak için Admin rolü gerekiyor.', 'error');
         return;
       }
 
       const form = new FormData(formEl);
       const taskTitle = String(form.get('taskTitle') || '').trim();
-      const reportTitle = String(form.get('reportTitle') || '').trim();
-      const summary = String(form.get('summary') || '').trim();
+      const assigneeEmail = String(form.get('assigneeEmail') || '').trim();
+      const assignee = clubUsers.find(user => sameEmail(user.email, assigneeEmail));
+      const selected = findClubMember(selectedClubMemberId);
 
       await window.BerkayApi.createTask({
         title: taskTitle,
-        owner: selected.member.name,
-        priority: form.get('priority')
-      });
-      await window.BerkayApi.createReport({
-        title: `${selected.member.name} | ${reportTitle}`,
-        summary: `[${selected.team.name}] ${summary}`
+        owner: assignee ? assignee.displayName : assigneeEmail,
+        assigneeEmail,
+        priority: form.get('priority'),
+        description: form.get('description')
       });
 
-      selected.member.history = selected.member.history || [];
-      selected.member.history.unshift({ taskTitle, reportTitle, summary, createdAt: new Date().toISOString() });
-      saveClubTeams();
+      if (selected && selected.member && (!selected.member.email || sameEmail(selected.member.email, assigneeEmail))) {
+        selected.member.email = assigneeEmail;
+        selected.member.history = selected.member.history || [];
+        selected.member.history.unshift({ taskTitle, createdAt: new Date().toISOString() });
+        saveClubTeams();
+      }
       formEl.reset();
-      toast('Görev atandı ve rapor kaydedildi.');
+      toast('Görev atandı ve üyeye bildirim gönderildi.');
+      await renderClub();
+    });
+  }
+
+  const taskReportForm = qs('#taskReportForm');
+  if (taskReportForm) {
+    taskReportForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formEl = event.currentTarget;
+      const form = new FormData(formEl);
+      const taskId = String(form.get('taskId') || '').trim();
+      if (!taskId) {
+        toast('Rapor göndermek için atanmış bir görev gerekiyor.', 'error');
+        return;
+      }
+
+      await window.BerkayApi.submitTaskReport(taskId, {
+        title: form.get('reportTitle'),
+        summary: form.get('summary')
+      });
+      formEl.reset();
+      toast('Rapor dosyası admin onayına gönderildi.');
       await renderClub();
     });
   }
@@ -627,16 +844,16 @@ function setupClubForms() {
         return;
       }
 
-      const email = form.get('email');
+      const userId = form.get('email');
       const role = form.get('role');
       const teamId = form.get('teamId');
-      const user = window.BerkayApi.updateUserRole(email, role);
+      const user = await window.BerkayApi.updateUserRole(userId, role);
 
       if (teamId) {
         const team = clubTeams.find(item => item.id === teamId);
         if (team) {
           team.members = team.members || [];
-          let member = team.members.find(item => item.email === user.email || item.name === user.displayName);
+          let member = team.members.find(item => sameEmail(item.email, user.email) || item.name === user.displayName);
           if (!member) {
             member = {
               id: createLocalId('member'),
@@ -693,6 +910,11 @@ async function initClubModule() {
 
 async function renderClub() {
   const data = await window.BerkayApi.getClubOverview();
+  if (currentClubUser && currentClubUser.role === 'ADMIN') {
+    clubUsers = await window.BerkayApi.getUsers();
+  } else {
+    clubUsers = currentClubUser ? [currentClubUser] : [];
+  }
   loadClubTeams(data.assignments || []);
   syncSelectedClubMember();
 

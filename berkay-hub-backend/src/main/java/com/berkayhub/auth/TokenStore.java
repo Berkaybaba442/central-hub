@@ -26,6 +26,15 @@ public class TokenStore {
         sessions.remove(token);
     }
 
+    public void updateRole(String email, UserRole role) {
+        sessions.replaceAll((token, session) -> {
+            if (session.email().equalsIgnoreCase(email)) {
+                return new SessionData(session.email(), role, session.createdAt());
+            }
+            return session;
+        });
+    }
+
     public long activeCount() {
         return sessions.size();
     }

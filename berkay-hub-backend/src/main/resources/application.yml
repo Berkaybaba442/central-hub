@@ -26,6 +26,8 @@ management:
         include: health,info,metrics
 
 berkay-hub:
+  reports:
+    storage-path: ${BERKAY_HUB_REPORT_DIR:data/reports}
   cors:
     allowed-origins:
       - http://localhost:5500

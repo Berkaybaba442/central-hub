@@ -17,10 +17,14 @@
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/camera/SecurityCameraRepository.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ClubController.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ClubDtos.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ClubNotification.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ClubNotificationRepository.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ClubTask.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ClubTaskRepository.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/Report.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ReportFileStorage.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ReportRepository.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/ReportStatus.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/TaskPriority.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/TeamAssignment.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/club/TeamAssignmentRepository.java
