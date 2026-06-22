@@ -146,6 +146,33 @@ async function fetchBlob(path, options = {}) {
   };
 }
 
+async function fetchForm(path, formData, options = {}) {
+  const token = getToken();
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...options,
+    method: options.method || 'POST',
+    body: formData,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  if (!response.ok) {
+    let message = `API hatası: ${response.status}`;
+    try {
+      const error = await response.json();
+      message = error.message || error.error || message;
+    } catch {
+      // ignore json parse fail
+    }
+    throw markApiError(new Error(message), response.status);
+  }
+
+  if (response.status === 204) return null;
+  return response.json();
+}
+
 function filenameFromDisposition(value) {
   if (!value) return null;
   const encoded = value.match(/filename\*=UTF-8''([^;]+)/i);
@@ -260,8 +287,8 @@ const BerkayApi = {
   async toggleTask(id) {
     return fetchJson(`/club/tasks/${id}/toggle`, { method: 'PUT' });
   },
-  async submitTaskReport(taskId, payload) {
-    return fetchJson(`/club/tasks/${taskId}/reports`, { method: 'POST', body: JSON.stringify(payload) });
+  async submitTaskReport(taskId, formData) {
+    return fetchForm(`/club/tasks/${taskId}/reports`, formData);
   },
   async reviewReport(id, payload) {
     return fetchJson(`/club/reports/${id}/review`, { method: 'PUT', body: JSON.stringify(payload) });

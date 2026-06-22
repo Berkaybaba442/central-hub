@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
@@ -92,11 +93,11 @@ public class ClubController {
 
         Resource resource = reportFileStorage.load(report);
         ContentDisposition disposition = ContentDisposition.attachment()
-                .filename(report.getFileName() == null ? "rapor.md" : report.getFileName(), StandardCharsets.UTF_8)
+                .filename(downloadFileName(report), StandardCharsets.UTF_8)
                 .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
-                .contentType(MediaType.parseMediaType("text/markdown"))
+                .contentType(mediaTypeFor(report))
                 .body(resource);
     }
 
@@ -115,7 +116,7 @@ public class ClubController {
         report.setReviewedByEmail(admin.getEmail());
         report.setReviewedByName(admin.getDisplayName());
         report.setReviewedAt(LocalDateTime.now());
-        Report saved = saveReportWithFile(report);
+        Report saved = reportRepository.save(report);
 
         if (saved.getAuthorEmail() != null && !sameEmail(saved.getAuthorEmail(), admin.getEmail())) {
             String result = saved.getStatus() == ReportStatus.APPROVED ? "kabul edildi" : "reddedildi";
@@ -195,9 +196,15 @@ public class ClubController {
         return saved;
     }
 
-    @PostMapping("/tasks/{id}/reports")
+    @PostMapping(value = "/tasks/{id}/reports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public Report submitTaskReport(@PathVariable Long id, @Valid @RequestBody SubmitTaskReportRequest request, Authentication authentication) {
+    public Report submitTaskReport(
+            @PathVariable Long id,
+            @RequestParam("title") String title,
+            @RequestParam(value = "note", required = false) String note,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
         AppUser user = currentUser(authentication);
         ClubTask task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Görev bulunamadı."));
@@ -205,13 +212,24 @@ public class ClubController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu görev için rapor gönderme yetkin yok.");
         }
 
-        Report report = new Report(request.title().trim(), request.summary().trim());
+        String reportTitle = clean(title);
+        if (reportTitle == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rapor başlığı zorunludur.");
+        }
+        String reportNote = clean(note);
+        if (reportNote == null) {
+            reportNote = "Yüklenen dosya: " + (file.getOriginalFilename() == null ? "rapor dosyası" : file.getOriginalFilename());
+        }
+
+        Report report = new Report(reportTitle, reportNote);
         report.setTaskId(task.getId());
         report.setTaskTitle(task.getTitle());
         report.setAuthorEmail(user.getEmail());
         report.setAuthorName(user.getDisplayName());
         report.setStatus(ReportStatus.PENDING);
-        Report saved = saveReportWithFile(report);
+        Report saved = reportRepository.save(report);
+        reportFileStorage.saveUploadedReportFile(saved, file);
+        saved = reportRepository.save(saved);
 
         notifyAdmins(
                 "Yeni rapor bekliyor",
@@ -259,6 +277,24 @@ public class ClubController {
         Report saved = reportRepository.save(report);
         reportFileStorage.writeReportFile(saved);
         return reportRepository.save(saved);
+    }
+
+    private String downloadFileName(Report report) {
+        if (report.getOriginalFileName() != null && !report.getOriginalFileName().isBlank()) return report.getOriginalFileName();
+        if (report.getFileName() != null && !report.getFileName().isBlank()) return report.getFileName();
+        return "rapor.md";
+    }
+
+    private MediaType mediaTypeFor(Report report) {
+        if (report.getFileContentType() == null || report.getFileContentType().isBlank()) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        try {
+            return MediaType.parseMediaType(report.getFileContentType());
+        } catch (IllegalArgumentException ex) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
     }
 
     private List<Report> reportsFor(AppUser user) {

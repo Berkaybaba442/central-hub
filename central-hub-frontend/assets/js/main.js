@@ -718,6 +718,7 @@ function renderClubWorkLists(data) {
             <div>
               <h3 class="font-bold text-white">${escapeHtml(report.title)}</h3>
               <p class="mt-1 text-xs text-slate-500">${escapeHtml(report.taskTitle || 'Genel rapor')}</p>
+              ${report.originalFileName ? `<p class="mt-1 text-xs text-blue-300">Dosya: ${escapeHtml(report.originalFileName)}</p>` : ''}
             </div>
           </div>
           <span class="${reportStatusBadge(report.status)}">${reportStatusLabel(report.status)}</span>
@@ -813,13 +814,20 @@ function setupClubForms() {
         toast('Rapor göndermek için atanmış bir görev gerekiyor.', 'error');
         return;
       }
+      const file = form.get('reportFile');
+      if (!(file instanceof File) || !file.name) {
+        toast('Rapor dosyası seçmelisin.', 'error');
+        return;
+      }
 
-      await window.BerkayApi.submitTaskReport(taskId, {
-        title: form.get('reportTitle'),
-        summary: form.get('summary')
-      });
+      const upload = new FormData();
+      upload.append('title', form.get('reportTitle'));
+      upload.append('note', form.get('note') || '');
+      upload.append('file', file);
+
+      await window.BerkayApi.submitTaskReport(taskId, upload);
       formEl.reset();
-      toast('Rapor dosyası admin onayına gönderildi.');
+      toast('Rapor dosyası VDS üzerine yüklendi ve admin onayına gönderildi.');
       await renderClub();
     });
   }

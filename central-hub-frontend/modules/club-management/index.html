@@ -6,7 +6,7 @@
   <title>Berkay Hub | Kulüp Yönetimi</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="../../assets/css/style.css?v=20260622-notifications2" />
+  <link rel="stylesheet" href="../../assets/css/style.css?v=20260622-fileupload1" />
 </head>
 <body data-app="club">
   <nav class="top-nav">
@@ -151,10 +151,11 @@
             <form id="taskReportForm" class="mt-5 space-y-3">
               <select id="reportTaskSelect" name="taskId" class="input-dark" required></select>
               <input name="reportTitle" class="input-dark" placeholder="Rapor başlığı" required />
-              <textarea name="summary" class="input-dark min-h-28" placeholder="Yapılan iş, çıktı ve notlar" required></textarea>
+              <input name="reportFile" type="file" class="input-dark" required />
+              <textarea name="note" class="input-dark min-h-24" placeholder="İsteğe bağlı kısa not"></textarea>
               <button class="btn-primary w-full" type="submit">
                 <i class="fa-solid fa-file-arrow-up"></i>
-                Rapor Dosyası Gönder
+                Dosyayı VDS'ye Yükle
               </button>
             </form>
           </aside>
@@ -237,7 +238,7 @@
       </div>
     </section>
   </main>
-  <script src="../../assets/js/api.js?v=20260622-notifications2"></script>
-  <script src="../../assets/js/main.js?v=20260622-notifications2"></script>
+  <script src="../../assets/js/api.js?v=20260622-fileupload1"></script>
+  <script src="../../assets/js/main.js?v=20260622-fileupload1"></script>
 </body>
 </html>

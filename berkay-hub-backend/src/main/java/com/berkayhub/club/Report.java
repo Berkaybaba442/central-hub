@@ -24,6 +24,8 @@ public class Report {
     @Column(length = 1000)
     private String reviewNote;
     private LocalDateTime reviewedAt;
+    private String originalFileName;
+    private String fileContentType;
     private String fileName;
     private String filePath;
     private Long fileSize;
@@ -55,6 +57,10 @@ public class Report {
     public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
     public LocalDateTime getReviewedAt() { return reviewedAt; }
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public String getOriginalFileName() { return originalFileName; }
+    public void setOriginalFileName(String originalFileName) { this.originalFileName = originalFileName; }
+    public String getFileContentType() { return fileContentType; }
+    public void setFileContentType(String fileContentType) { this.fileContentType = fileContentType; }
     public String getFileName() { return fileName; }
     public void setFileName(String fileName) { this.fileName = fileName; }
     public String getFilePath() { return filePath; }
