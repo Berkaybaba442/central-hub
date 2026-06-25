@@ -175,6 +175,24 @@ Authorized redirect URIs:
 
 Not: Callback URL Google Cloud'daki `Authorized redirect URIs` degeriyle birebir ayni olmalidir. Uygulama Nginx ile `/api` altindan yayinlaniyorsa production redirect URI genellikle `http://SUNUCU_IP/api/google-calendar/oauth/callback` veya HTTPS sonrasinda `https://DOMAIN/api/google-calendar/oauth/callback` olur.
 
+Guncel karar/not:
+
+- Google Cloud OAuth consent/audience tarafinda kulupten ve farkli Gmail hesaplarindan kullanim icin `External` secilmelidir.
+- Local gelistirme `localhost` adresleriyle devam edebilir; domain satin almadan local test yapilabilir.
+- VDS/IP uzerinde production Google OAuth icin public IP yeterli olmayabilir. Google redirect URI kurallari nedeniyle domain + HTTPS akisi tercih edilmelidir.
+- Domain adaylari: `mueemk.com.tr` veya `eemk.com.tr`.
+- Domain secildikten sonra Google Cloud tarafinda Authorized JavaScript origin ve Authorized redirect URI degerleri secilen domaine gore guncellenmelidir. Ornek:
+
+```text
+Authorized JavaScript origins:
+- https://mueemk.com.tr
+- https://eemk.com.tr
+
+Authorized redirect URIs:
+- https://mueemk.com.tr/api/google-calendar/oauth/callback
+- https://eemk.com.tr/api/google-calendar/oauth/callback
+```
+
 ### Guvenlik Kameralari
 
 - Guvenlik kamerasi modulu admin'e ozel hale getirildi.
@@ -607,6 +625,8 @@ Tamamlananlar:
 
 Kalanlar:
 
+- Google Calendar production kurulumu domain karari verilene kadar bekletildi. Domain adaylari `mueemk.com.tr` ve `eemk.com.tr`.
+- Domain secildikten sonra HTTPS, Google Cloud OAuth origin/redirect URI degerleri ve VDS environment degerleri netlestirilmeli.
 - Ders programi saatleri backend'de kalici olmadigi icin Google etkinlikleriyle ders saatleri arasinda tam cakisma analizi henuz yapilmadi.
 - Google API cagri katmani icin mock Google API controller/service testleri genisletilmeli.
 - Google Calendar'dan gelen etkinliklerin Berkay Hub icinde kalici kopyasi tutulacaksa ek tablo ve sync state modeli tasarlanmali.
