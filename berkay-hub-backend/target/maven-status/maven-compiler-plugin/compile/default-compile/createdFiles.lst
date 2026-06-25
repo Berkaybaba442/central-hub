@@ -34,6 +34,7 @@ com/berkayhub/club/TeamAssignmentRepository.class
 com/berkayhub/config/DataSeeder.class
 com/berkayhub/club/ReportStatus.class
 com/berkayhub/auth/AuthDtos.class
+com/berkayhub/googlecalendar/GoogleCalendarService$1.class
 com/berkayhub/club/ClubDtos$ClubOverview.class
 com/berkayhub/club/ClubDtos$CreateReportRequest.class
 com/berkayhub/club/ClubDtos.class

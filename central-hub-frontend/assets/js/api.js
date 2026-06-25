@@ -306,6 +306,36 @@ const BerkayApi = {
   async createAcademicEvent(payload) {
     return fetchJson('/academic/events', { method: 'POST', body: JSON.stringify(payload) });
   },
+  async getGoogleCalendarStatus() {
+    return fetchJson('/google-calendar/status');
+  },
+  async getGoogleCalendarMembers() {
+    return fetchJson('/google-calendar/members');
+  },
+  async startGoogleCalendarOAuth(returnUrl) {
+    return fetchJson('/google-calendar/oauth/start', {
+      method: 'POST',
+      body: JSON.stringify({ returnUrl })
+    });
+  },
+  async disconnectGoogleCalendar() {
+    return fetchJson('/google-calendar/connection', { method: 'DELETE' });
+  },
+  async getGoogleCalendarEvents() {
+    return fetchJson('/google-calendar/events');
+  },
+  async createGoogleCalendarEvent(payload) {
+    return fetchJson('/google-calendar/events', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  async syncGoogleAcademicEvent(id) {
+    return fetchJson(`/google-calendar/academic-events/${id}/sync`, { method: 'POST' });
+  },
+  async syncGoogleAcademicEvents() {
+    return fetchJson('/google-calendar/academic-events/sync', { method: 'POST' });
+  },
+  async syncGoogleTask(id, payload) {
+    return fetchJson(`/google-calendar/tasks/${id}/sync`, { method: 'POST', body: JSON.stringify(payload) });
+  },
   async getCameras() {
     return fetchJson('/cameras');
   },

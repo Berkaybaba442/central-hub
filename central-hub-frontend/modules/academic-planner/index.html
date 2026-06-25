@@ -8,7 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="../../assets/css/style.css?v=20260622-fileupload1" />
+  <link rel="stylesheet" href="../../assets/css/style.css?v=20260625-google-oauth1" />
 </head>
 <body data-app="academic">
   <nav class="top-nav">
@@ -167,24 +167,15 @@
           <div class="flex items-start justify-between gap-4 border-b border-slate-700/70 pb-4">
             <div>
               <h2 class="section-heading"><i class="fa-brands fa-google text-blue-400"></i>Google Calendar</h2>
-              <p class="mt-2 text-sm leading-6 text-slate-400">Üye takvimleri için kişisel Google yetkilendirmesi.</p>
+              <p class="mt-2 text-sm leading-6 text-slate-400">Kişisel Google hesabı ile takvim senkronu.</p>
             </div>
             <span id="googleCalendarConnectionBadge" class="badge">Bağlantı yok</span>
           </div>
 
           <div class="mt-5 grid gap-3">
-            <label class="calendar-field-label">
-              Google Client ID
-              <input id="googleCalendarClientId" class="input-dark" placeholder="OAuth Web Client ID" autocomplete="off" />
-            </label>
-            <label class="calendar-field-label">
-              Google API Key
-              <input id="googleCalendarApiKey" class="input-dark" placeholder="Calendar API Key" autocomplete="off" />
-            </label>
-            <button id="saveGoogleCalendarConfig" class="btn-secondary w-full" type="button">
-              <i class="fa-solid fa-floppy-disk"></i>
-              Ayarları Kaydet
-            </button>
+            <div id="googleCalendarAccount" class="calendar-sync-status">
+              Google Calendar hazır değil.
+            </div>
           </div>
 
           <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -207,7 +198,7 @@
           <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
             <div>
               <h2 class="section-heading"><i class="fa-solid fa-users text-blue-400"></i>Üye Takvimleri</h2>
-              <p class="mt-2 text-sm text-slate-400">Seçilen üyenin takvim sayfası ve senkron durumu.</p>
+              <p class="mt-2 text-sm text-slate-400">Üye bağlantı durumu ve kişisel senkron işlemleri.</p>
             </div>
             <span id="selectedCalendarOwner" class="badge">Üye seçilmedi</span>
           </div>
@@ -260,11 +251,9 @@
       </div>
     </section>
   </main>
-  <script src="../../assets/js/api.js?v=20260622-fileupload1"></script>
-  <script src="../../assets/js/main.js?v=20260622-fileupload1"></script>
-  <script src="../../assets/js/course-planner.js?v=20260622-fileupload1"></script>
-  <script src="../../assets/js/google-calendar.js?v=20260622-fileupload1"></script>
-  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+  <script src="../../assets/js/api.js?v=20260625-google-oauth1"></script>
+  <script src="../../assets/js/main.js?v=20260625-google-oauth1"></script>
+  <script src="../../assets/js/course-planner.js?v=20260625-google-oauth1"></script>
+  <script src="../../assets/js/google-calendar.js?v=20260625-google-oauth1"></script>
 </body>
 </html>

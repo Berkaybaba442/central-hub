@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/health", "/actuator/health").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/google-calendar/oauth/callback", "/api/health", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new TokenAuthenticationFilter(tokenStore), UsernamePasswordAuthenticationFilter.class)

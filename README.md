@@ -25,6 +25,7 @@ central-hub/
 - Gorev atanan uye ana sayfadaki bildirim panelinde ve ust bardaki zil gostergesinde bildirim gorur.
 - Uye, atanmis gorevine rapor olarak dosya yukler. Dosyalar VDS uzerinde `BERKAY_HUB_REPORT_DIR` ile ayarlanan klasore kaydedilir.
 - Admin, gonderilen rapor dosyasini VDS uzerinden indirir ve raporu kabul veya red durumuna alir.
+- Google Calendar entegrasyonu backend tabanli OAuth akisiyle calisir; refresh tokenlar sifreli saklanir.
 - VDS/domain olmayan senaryoda uygulama IP uzerinden yayinlanabilir.
 
 ## Yapilan Ana Gelistirmeler
@@ -123,31 +124,56 @@ Akademik planlayiciya `Takvim` sekmesi eklendi.
 
 Eklenenler:
 
-- Google Client ID ve API Key giris alani
+- Backend tabanli Google OAuth baslatma ve callback akisi
+- Kullanici bazli Google Calendar baglanti kaydi
+- Refresh tokenlari AES-GCM ile sifreli saklama
+- Token suresi doldugunda backend uzerinden otomatik access token yenileme
 - Google yetkilendirme butonu
 - Baglantiyi kesme butonu
 - Uye takvim kartlari
-- Secilen uye icin takvim sayfasi
+- Admin icin uye takvim baglanti durumu gorunumu
+- Kullanici izni olmadan baska uyenin takvim verisini okumama korumasi
 - Google Calendar etkinligi olusturma formu
-- Akademik etkinlikleri Google Calendar'a senkronlama
-- Yaklasan Google Calendar etkinliklerini listeleme
+- Akademik etkinlikleri Google Calendar'a insert/patch mantigiyla senkronlama
+- Kulup gorevlerini tarih araligi verilerek Google Calendar etkinligine donusturen backend endpointi
+- Yaklasan Google Calendar etkinliklerini backend uzerinden listeleme
+- Google etkinlikleri ile akademik etkinlikler arasinda temel cakisma uyarisi
+
+Backend OAuth ayarlari ortam degiskenleriyle verilir:
+
+```text
+GOOGLE_CALENDAR_CLIENT_ID=...
+GOOGLE_CALENDAR_CLIENT_SECRET=...
+GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:8080/api/google-calendar/oauth/callback
+BERKAY_HUB_GOOGLE_TOKEN_SECRET=uzun-rastgele-secret
+BERKAY_HUB_FRONTEND_URL=http://localhost:5500/modules/academic-planner/index.html
+BERKAY_HUB_TIME_ZONE=Europe/Istanbul
+```
+
+`BERKAY_HUB_GOOGLE_TOKEN_SECRET` bos olursa Google Calendar entegrasyonu backend tarafinda yapilandirilmamis kabul edilir ve token saklama yapilmaz.
 
 Google entegrasyonu icin Google Cloud tarafinda:
 
 - Calendar API aktif olmali.
-- OAuth Web Client ID olusturulmali.
-- API Key olusturulmali.
-- Authorized JavaScript origins alanina yayin adresi eklenmeli.
+- OAuth Web Client olusturulmali.
+- Authorized JavaScript origins alanina frontend yayin adresi eklenmeli.
+- Authorized redirect URIs alanina backend callback adresi eklenmeli.
 
 Ornekler:
 
 ```text
-http://localhost:5500
-http://SUNUCU_IP
-http://SUNUCU_IP:5500
+Authorized JavaScript origins:
+- http://localhost:5500
+- http://SUNUCU_IP
+- http://SUNUCU_IP:5500
+
+Authorized redirect URIs:
+- http://localhost:8080/api/google-calendar/oauth/callback
+- http://SUNUCU_IP/api/google-calendar/oauth/callback
+- http://SUNUCU_IP:8080/api/google-calendar/oauth/callback
 ```
 
-Not: Tarayici tarafindaki Google token kalici olarak backend'e kaydedilmiyor. Uretim seviyesinde kalici ve daha guvenli Google Calendar entegrasyonu icin backend OAuth/refresh token akisi eklenmelidir.
+Not: Callback URL Google Cloud'daki `Authorized redirect URIs` degeriyle birebir ayni olmalidir. Uygulama Nginx ile `/api` altindan yayinlaniyorsa production redirect URI genellikle `http://SUNUCU_IP/api/google-calendar/oauth/callback` veya HTTPS sonrasinda `https://DOMAIN/api/google-calendar/oauth/callback` olur.
 
 ### Guvenlik Kameralari
 
@@ -168,6 +194,7 @@ berkay-hub-backend/
 │   ├── academic/
 │   ├── camera/
 │   ├── config/
+│   ├── googlecalendar/
 │   └── system/
 └── src/main/resources/application.yml
 ```
@@ -231,6 +258,17 @@ POST /api/club/assignments
 GET  /api/academic/events
 POST /api/academic/events
 
+GET    /api/google-calendar/status
+GET    /api/google-calendar/members
+POST   /api/google-calendar/oauth/start
+GET    /api/google-calendar/oauth/callback
+DELETE /api/google-calendar/connection
+GET    /api/google-calendar/events
+POST   /api/google-calendar/events
+POST   /api/google-calendar/academic-events/{id}/sync
+POST   /api/google-calendar/academic-events/sync
+POST   /api/google-calendar/tasks/{id}/sync
+
 GET  /api/cameras
 POST /api/cameras
 
@@ -246,6 +284,10 @@ Notlar:
 - Rapor upload alanlari: `title`, opsiyonel `note`, zorunlu `file`.
 - `GET /api/club/reports/{id}/download` yetkili admin veya raporu yukleyen uye tarafindan kullanilabilir.
 - `PUT /api/club/reports/{id}/review` admin yetkisi ister ve `APPROVED` veya `REJECTED` durumlarini kabul eder.
+- `GET /api/google-calendar/oauth/callback` Google redirect icin auth istemez; state kaydi uzerinden kullaniciyi bulur.
+- Google Calendar event listeleme/olusturma ve senkron endpointleri sadece giris yapan kullanicinin kendi Google baglantisini kullanir.
+- `GET /api/google-calendar/members` admin icin tum uyelerin baglanti durumunu, normal uye icin sadece kendi durumunu dondurur.
+- `POST /api/google-calendar/tasks/{id}/sync` gorev icin `startsAt` ve `endsAt` alanlarini bekler.
 
 ## Varsayilan Kullanici Bilgileri
 
@@ -365,6 +407,20 @@ environment:
   - BERKAY_HUB_REPORT_DIR=/app/data/reports
 ```
 
+Google Calendar entegrasyonu icin backend servisine su ortam degiskenleri eklenmelidir:
+
+```yaml
+environment:
+  - GOOGLE_CALENDAR_CLIENT_ID=...
+  - GOOGLE_CALENDAR_CLIENT_SECRET=...
+  - GOOGLE_CALENDAR_REDIRECT_URI=http://SUNUCU_IP/api/google-calendar/oauth/callback
+  - BERKAY_HUB_GOOGLE_TOKEN_SECRET=uzun-rastgele-secret
+  - BERKAY_HUB_FRONTEND_URL=http://SUNUCU_IP/modules/academic-planner/index.html
+  - BERKAY_HUB_TIME_ZONE=Europe/Istanbul
+```
+
+Frontend `5500:80` portundan yayinlaniyorsa `BERKAY_HUB_FRONTEND_URL` ve Google Cloud origin degeri `http://SUNUCU_IP:5500` seklinde verilmelidir.
+
 Port 80'den yayinlamak istersen `deploy/docker-compose.yml` icinde frontend portunu su hale getir:
 
 ```yaml
@@ -447,19 +503,19 @@ docker compose up -d --build --force-recreate
 Guncel frontend cache etiketi:
 
 ```text
-20260622-fileupload1
+20260625-google-oauth1
 ```
 
 Sunucuda yeni kodun servis edildigini kontrol et:
 
 ```bash
-curl -s http://SUNUCU_IP/ | grep fileupload1
-curl -s "http://SUNUCU_IP/assets/js/api.js?v=20260622-fileupload1" | grep -E "demo|fallback|admin123|createDemoUser"
+curl -s http://SUNUCU_IP/ | grep google-oauth1
+curl -s "http://SUNUCU_IP/assets/js/api.js?v=20260625-google-oauth1" | grep -E "demo|fallback|admin123|createDemoUser"
 ```
 
 Beklenen:
 
-- Ilk komut `fileupload1` gostermeli.
+- Ilk komut `google-oauth1` gostermeli.
 - Ikinci komut hicbir cikti vermemeli.
 
 Eger ikinci komut demo/fallback/admin123 cikti veriyorsa VDS hala eski frontend dosyasini servis ediyor demektir. `git pull` basarisiz olmus olabilir veya Docker eski volume/dosya ile kalkmis olabilir.
@@ -506,27 +562,55 @@ Rapor dosyasi upload akisi kontrolu:
 rg -n "multipart/form-data|reportFile|saveUploadedReportFile|BERKAY_HUB_REPORT_DIR" .
 ```
 
+Google Calendar backend akisi kontrolu:
+
+```bash
+rg -n "google-calendar|GoogleCalendar|BERKAY_HUB_GOOGLE_TOKEN_SECRET|GOOGLE_CALENDAR_REDIRECT_URI" .
+```
+
+Google Calendar manuel dogrulama:
+
+```bash
+curl -s http://localhost:8080/api/google-calendar/status \
+  -H "Authorization: Bearer TOKEN"
+```
+
+Beklenen:
+
+- Google ortam degiskenleri eksikse `configured: false` donmeli.
+- Ortam degiskenleri verildikten sonra `configured: true` donmeli.
+- Takvim sekmesindeki `Yetkilendir` butonu Google consent ekranina yonlendirmeli.
+- Callback sonrasi `/modules/academic-planner/index.html?googleCalendar=connected` donusu alinmali ve baglanti durumu `Bagli` gorunmeli.
+- Akademik etkinlik senkronu ayni etkinligi tekrar gonderirken yeni kopya olusturmak yerine Google event kaydini guncellemelidir.
+
 ## Bilinen Notlar ve Sonraki Isler
 
 ### 1. Oncelik: Google Takvim Entegrasyonu
 
-Su anlik gelistirme onceligi Google Takvim entegrasyonudur.
+Bu onceligin ilk backend OAuth fazi tamamlandi.
 
-Yapilacaklar:
+Tamamlananlar:
 
-- Frontend-only Google token akisi backend tabanli OAuth akisina alinmali.
-- Google OAuth callback endpointi backend'e eklenmeli.
-- Kullanici bazli Google refresh token saklama modeli kurulmali.
-- Refresh tokenlar duz metin saklanmamali; sifreli veya secret-managed saklama kullanilmali.
-- Her uye kendi Google Calendar hesabini Berkay Hub hesabina baglayabilmeli.
-- Admin, uyelerin takvim baglanti durumunu gorebilmeli ancak kullanici izni olmadan takvim verisini okuyamamali.
-- Akademik etkinlik ve kulup gorevleri Google Calendar etkinligine donusturulebilmeli.
-- Berkay Hub icinde duzenlenen etkinliklerin Google Calendar'a tekrar senkronlanmasi saglanmali.
-- Google Calendar'dan gelen etkinlikler Berkay Hub ekraninda okunabilir hale getirilmeli.
-- Cakisan etkinlik ve ders saatleri icin uyari mekanizmasi eklenmeli.
-- Token suresi doldugunda otomatik yenileme ve hata bildirimi gelmeli.
-- VDS/domain ortaminda Google Cloud `Authorized JavaScript origins` ve `Authorized redirect URIs` degerleri README'ye net orneklerle eklenmeli.
-- Google entegrasyonu icin backend testleri ve manuel dogrulama adimlari yazilmali.
+- Frontend-only Google token akisi backend tabanli OAuth akisina alindi.
+- Google OAuth callback endpointi backend'e eklendi.
+- Kullanici bazli Google refresh token saklama modeli kuruldu.
+- Refresh tokenlar duz metin saklanmaz; `BERKAY_HUB_GOOGLE_TOKEN_SECRET` ile AES-GCM sifreleme kullanilir.
+- Her uye kendi Google Calendar hesabini Berkay Hub hesabina baglayabilir.
+- Admin, uyelerin takvim baglanti durumunu gorebilir ancak kullanici izni olmadan takvim verisini okuyamaz.
+- Akademik etkinlikler Google Calendar etkinligine donusturulur ve tekrar senkronlandiginda mevcut Google event kaydi patch edilir.
+- Kulup gorevleri icin tarih araligi verilerek Google Calendar etkinligi olusturan backend endpointi eklendi.
+- Google Calendar'dan gelen yaklasan etkinlikler Berkay Hub ekraninda okunur.
+- Akademik etkinliklerle temel cakisma uyarisi eklendi.
+- Token suresi doldugunda refresh token ile otomatik yenileme yapilir; hata baglanti kaydinda tutulur.
+- VDS/domain ortaminda Google Cloud `Authorized JavaScript origins` ve `Authorized redirect URIs` ornekleri README'ye eklendi.
+- Google token sifreleme icin backend testi ve manuel dogrulama adimlari eklendi.
+
+Kalanlar:
+
+- Ders programi saatleri backend'de kalici olmadigi icin Google etkinlikleriyle ders saatleri arasinda tam cakisma analizi henuz yapilmadi.
+- Google API cagri katmani icin mock Google API controller/service testleri genisletilmeli.
+- Google Calendar'dan gelen etkinliklerin Berkay Hub icinde kalici kopyasi tutulacaksa ek tablo ve sync state modeli tasarlanmali.
+- Uretim icin secret rotation ve mevcut sifreli tokenlarin yeni secret'a tasinma akisi dokumante edilmeli.
 
 ### 2. Kulup, Gorev ve Rapor Akisi
 

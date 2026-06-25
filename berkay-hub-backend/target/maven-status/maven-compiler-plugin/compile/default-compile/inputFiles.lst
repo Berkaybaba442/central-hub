@@ -31,5 +31,14 @@
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/config/DataSeeder.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/config/SecurityConfig.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/config/TokenAuthenticationFilter.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarConnection.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarConnectionRepository.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarController.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarDtos.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarOAuthState.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarOAuthStateRepository.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarProperties.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleCalendarService.java
+/home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/googlecalendar/GoogleTokenCrypto.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/system/HealthController.java
 /home/berkay/projects/central-hub/berkay-hub-backend/src/main/java/com/berkayhub/system/SystemController.java

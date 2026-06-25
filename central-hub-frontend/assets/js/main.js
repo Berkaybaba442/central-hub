@@ -953,18 +953,32 @@ async function renderClub() {
 function setupAcademicTabs() {
   qsa('[data-academic-tab]').forEach(button => {
     button.addEventListener('click', () => {
-      const tab = button.dataset.academicTab;
-      qsa('[data-academic-tab]').forEach(item => {
-        item.classList.toggle('active', item.dataset.academicTab === tab);
-      });
-      qsa('[data-academic-panel]').forEach(panel => {
-        panel.classList.toggle('hidden', panel.dataset.academicPanel !== tab);
-      });
-      if (tab === 'google-calendar' && window.BerkayGoogleCalendar) {
-        window.BerkayGoogleCalendar.render();
-      }
+      activateAcademicTab(button.dataset.academicTab);
     });
   });
+}
+
+function activateAcademicTab(tab) {
+  qsa('[data-academic-tab]').forEach(item => {
+    item.classList.toggle('active', item.dataset.academicTab === tab);
+  });
+  qsa('[data-academic-panel]').forEach(panel => {
+    panel.classList.toggle('hidden', panel.dataset.academicPanel !== tab);
+  });
+  if (tab === 'google-calendar' && window.BerkayGoogleCalendar) {
+    window.BerkayGoogleCalendar.render();
+  }
+}
+
+function academicTabFromUrl() {
+  const params = new URLSearchParams(window.location.search || '');
+  if (params.has('googleCalendar')) return 'google-calendar';
+
+  const rawHash = String(window.location.hash || '').replace(/^#/, '');
+  const hashParams = new URLSearchParams(rawHash);
+  if (hashParams.has('calendar')) return 'google-calendar';
+
+  return null;
 }
 
 async function initAcademicModule() {
@@ -972,6 +986,8 @@ async function initAcademicModule() {
   setupAcademicTabs();
   await requireSession();
   await renderAcademicEvents();
+  const initialTab = academicTabFromUrl();
+  if (initialTab) activateAcademicTab(initialTab);
 
   const academicForm = qs('#academicForm');
   if (academicForm) {
