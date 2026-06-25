@@ -19,8 +19,12 @@ central-hub/
 - Backend Spring Boot 3.3.5, Java 17, SQLite ve Spring Security kullanir.
 - Login/signup artik backend uzerinden yapilir.
 - Frontend demo/local auth fallback kodlari kaldirildi; backend yoksa demo moda dusmez.
-- Yeni kullanicilar signup sonrasi `USER`/`UYE` yetkisiyle baslar.
+- Yeni kullanicilar signup sonrasi `USER` yetkisiyle baslar.
 - Admin paneli frontend tarafinda rol bazli gizlenir, backend tarafinda kamera endpointleri `ADMIN` rolu ister.
+- Admin kullanicilar uye hesaplarini gorebilir, rol guncelleyebilir ve uyelere gorev atayabilir.
+- Gorev atanan uye ana sayfadaki bildirim panelinde ve ust bardaki zil gostergesinde bildirim gorur.
+- Uye, atanmis gorevine rapor olarak dosya yukler. Dosyalar VDS uzerinde `BERKAY_HUB_REPORT_DIR` ile ayarlanan klasore kaydedilir.
+- Admin, gonderilen rapor dosyasini VDS uzerinden indirir ve raporu kabul veya red durumuna alir.
 - VDS/domain olmayan senaryoda uygulama IP uzerinden yayinlanabilir.
 
 ## Yapilan Ana Gelistirmeler
@@ -50,30 +54,59 @@ central-hub/
 Frontend rol listesi:
 
 ```text
-Uye
-Takim Uyesi
-Takim Kaptani
-Departman Baskan Yardimcisi
-Departman Baskani
-Yonetim Kurulu Uyesi
-Kulup Baskan Yardimcisi
-Kulup Baskani
-Denetim Kurulu Uyesi
+USER / Uye
 Admin
 ```
 
-Not: Backend su an temel olarak `USER` ve `ADMIN` rollerini kullanir. Detayli rol yetkilendirmeleri frontend tarafinda hazirlandi; kalici ve guvenli rol yetki modeli icin backend rol tablosu/endpointleri daha sonra genisletilmelidir.
+Not: Backend su an temel olarak `USER` ve `ADMIN` rollerini kullanir. Takim uyesi, takim kaptani, departman baskani gibi detayli kulup rolleri daha sonra backend rol tablosu ve yetki modeliyle genisletilmelidir.
 
 ### Kulup Yonetimi
 
 - "Uye Ekle" yaklasimi kaldirildi; sistem artik uyelerin kendi hesaplariyla kullanmasi icin hazirlandi.
 - Admin'e ozel "Rol Ata" alani eklendi.
+- Admin icin backend uzerinden gercek kullanici listesi cekilir.
+- Admin, uyelere gorev atayabilir. Gorev kaydinda atanan uye e-postasi, atayan admin ve gorev aciklamasi tutulur.
+- Gorev atanan uyeye bildirim olusturulur.
+- Gorev tamamlaninca adminlere bildirim olusturulur.
 - Takim bloklari eklendi.
 - Takim icinde uye kartlari gosterildi.
 - Uye kartina tiklaninca profil/ozet alani acilir.
-- Uye profili uzerinden gorev atama ve rapor ekleme akisi birlestirildi.
+- Uye profili uzerinden admin gorev atama akisina gecebilir.
+- Uye kendi atanmis gorevi icin rapor dosyasi yukler; rapor metin olarak yazilmaz, dosya olarak VDS'e kaydedilir.
+- Admin rapor dosyasini indirir, sonrasinda raporu `PENDING`, `APPROVED` veya `REJECTED` durumunda takip eder.
+- Rapor gecmisinde yuklenen dosyanin orijinal adi gosterilir.
+- Ana dashboard'a ayri `Bildirimler` paneli ve ust bar zil bildirimi eklendi.
 - Takim ekle/cikar sekmesi eklendi.
 - Takim, gorev, rapor ve rol formlarinda async `event.currentTarget` kaynakli reset hatalari duzeltildi.
+
+### Bildirim ve Rapor Dosyasi Akisi
+
+- `club_notifications` tablosu eklendi.
+- `TASK_ASSIGNED`, `TASK_COMPLETED`, `REPORT_SUBMITTED` ve `REPORT_REVIEWED` tiplerinde bildirim altyapisi hazirlandi.
+- Ana sayfada `Bildirimler` paneli eklendi.
+- Ust navigasyonda okunmamis bildirim sayisini gosteren zil ikonu eklendi.
+- Bildirimler kullanici e-postasina gore ayrilir.
+- Bildirimler okundu olarak isaretlenebilir.
+- Raporlar artik metin olarak yazilmaz; uye raporu dosya olarak yukler.
+- Rapor dosyasi `multipart/form-data` ile backend'e gonderilir.
+- Backend yuklenen dosyayi VDS uzerindeki rapor klasorune kaydeder.
+- Rapor kaydinda dosyanin orijinal adi, kayitli dosya adi, dosya yolu, boyutu ve content type bilgisi tutulur.
+- Admin raporu dosya olarak indirir.
+- Admin raporu inceledikten sonra kabul veya red durumuna alir.
+
+Varsayilan rapor klasoru:
+
+```text
+berkay-hub-backend/data/reports
+```
+
+VDS ortaminda klasor su ortam degiskeniyle degistirilebilir:
+
+```text
+BERKAY_HUB_REPORT_DIR=/app/data/reports
+```
+
+Docker Compose kullanildiginda backend `berkay_hub_data` volume'u `/app/data` altina baglanir. Bu nedenle varsayilan ayarla rapor dosyalari container yeniden baslasa bile volume icinde kalir.
 
 ### Akademik Planlayici
 
@@ -161,6 +194,12 @@ Varsayilan SQLite dosyasi:
 berkay-hub-backend/data/berkay-hub.sqlite
 ```
 
+Varsayilan rapor dosyasi klasoru:
+
+```text
+berkay-hub-backend/data/reports
+```
+
 ### Auth Endpointleri
 
 ```text
@@ -168,15 +207,25 @@ POST /api/auth/login
 POST /api/auth/signup
 GET  /api/auth/me
 POST /api/auth/logout
+GET  /api/auth/users
+PATCH /api/auth/users/{id}/role
 ```
 
 ### Diger Endpointler
 
 ```text
 GET  /api/club/overview
+GET  /api/club/reports
 POST /api/club/reports
+GET  /api/club/reports/{id}/download
+PUT  /api/club/reports/{id}/review
+GET  /api/club/tasks
 POST /api/club/tasks
 PUT  /api/club/tasks/{id}/toggle
+POST /api/club/tasks/{id}/reports
+GET  /api/club/notifications
+PUT  /api/club/notifications/{id}/read
+GET  /api/club/assignments
 POST /api/club/assignments
 
 GET  /api/academic/events
@@ -188,6 +237,15 @@ POST /api/cameras
 GET  /api/system/metrics
 GET  /api/health
 ```
+
+Notlar:
+
+- `GET /api/auth/users` ve `PATCH /api/auth/users/{id}/role` admin yetkisi ister.
+- `POST /api/club/tasks` admin yetkisi ister ve atanacak uyenin e-postasini `assigneeEmail` olarak bekler.
+- `POST /api/club/tasks/{id}/reports` JSON degil `multipart/form-data` bekler.
+- Rapor upload alanlari: `title`, opsiyonel `note`, zorunlu `file`.
+- `GET /api/club/reports/{id}/download` yetkili admin veya raporu yukleyen uye tarafindan kullanilabilir.
+- `PUT /api/club/reports/{id}/review` admin yetkisi ister ve `APPROVED` veya `REJECTED` durumlarini kabul eder.
 
 ## Varsayilan Kullanici Bilgileri
 
@@ -221,7 +279,7 @@ http://localhost:8080/api
 
 ### Frontend
 
-Ayrı terminal:
+Ayri terminal:
 
 ```bash
 cd central-hub-frontend
@@ -291,6 +349,20 @@ Mevcut `deploy/docker-compose.yml` frontend'i varsayilan olarak `5500:80` portun
 
 ```text
 http://SUNUCU_IP:5500
+```
+
+Backend container calisma dizini `/app` oldugu icin varsayilan SQLite ve rapor dosyalari su volume altinda tutulur:
+
+```text
+/app/data/berkay-hub.sqlite
+/app/data/reports
+```
+
+Rapor dosyalarini farkli bir VDS klasorune yazmak istersen backend servisine su ortam degiskeni eklenebilir:
+
+```yaml
+environment:
+  - BERKAY_HUB_REPORT_DIR=/app/data/reports
 ```
 
 Port 80'den yayinlamak istersen `deploy/docker-compose.yml` icinde frontend portunu su hale getir:
@@ -375,19 +447,19 @@ docker compose up -d --build --force-recreate
 Guncel frontend cache etiketi:
 
 ```text
-20260622-authnodemo
+20260622-fileupload1
 ```
 
 Sunucuda yeni kodun servis edildigini kontrol et:
 
 ```bash
-curl -s http://SUNUCU_IP/ | grep authnodemo
-curl -s "http://SUNUCU_IP/assets/js/api.js?v=20260622-authnodemo" | grep -E "demo|fallback|admin123|createDemoUser"
+curl -s http://SUNUCU_IP/ | grep fileupload1
+curl -s "http://SUNUCU_IP/assets/js/api.js?v=20260622-fileupload1" | grep -E "demo|fallback|admin123|createDemoUser"
 ```
 
 Beklenen:
 
-- Ilk komut `authnodemo` gostermeli.
+- Ilk komut `fileupload1` gostermeli.
 - Ikinci komut hicbir cikti vermemeli.
 
 Eger ikinci komut demo/fallback/admin123 cikti veriyorsa VDS hala eski frontend dosyasini servis ediyor demektir. `git pull` basarisiz olmus olabilir veya Docker eski volume/dosya ile kalkmis olabilir.
@@ -428,12 +500,67 @@ rg -n "demo|fallback|admin123|createDemoUser" central-hub-frontend/assets/js/api
 
 Guncel durumda bu komut demo/fallback icin cikti vermemelidir.
 
+Rapor dosyasi upload akisi kontrolu:
+
+```bash
+rg -n "multipart/form-data|reportFile|saveUploadedReportFile|BERKAY_HUB_REPORT_DIR" .
+```
+
 ## Bilinen Notlar ve Sonraki Isler
 
-- Backend rol modeli su an `USER` ve `ADMIN` temelli. Detayli kulup rolleri backend'e kalici olarak eklenmeli.
-- Frontend tarafindaki rol atama simdilik local/arayuz agirlikli; kalici ve guvenli rol atama icin backend endpointleri eklenmeli.
-- Default admin sifresi uretimde degistirilmeli.
-- Domain alindiktan sonra HTTPS icin Nginx + Let's Encrypt kurulmalı.
-- Google Calendar icin production seviyesinde backend OAuth akisi eklenmeli.
-- VDS'de `target/` derleme ciktisi GitHub'a pushlanmamalidir.
+### 1. Oncelik: Google Takvim Entegrasyonu
 
+Su anlik gelistirme onceligi Google Takvim entegrasyonudur.
+
+Yapilacaklar:
+
+- Frontend-only Google token akisi backend tabanli OAuth akisina alinmali.
+- Google OAuth callback endpointi backend'e eklenmeli.
+- Kullanici bazli Google refresh token saklama modeli kurulmali.
+- Refresh tokenlar duz metin saklanmamali; sifreli veya secret-managed saklama kullanilmali.
+- Her uye kendi Google Calendar hesabini Berkay Hub hesabina baglayabilmeli.
+- Admin, uyelerin takvim baglanti durumunu gorebilmeli ancak kullanici izni olmadan takvim verisini okuyamamali.
+- Akademik etkinlik ve kulup gorevleri Google Calendar etkinligine donusturulebilmeli.
+- Berkay Hub icinde duzenlenen etkinliklerin Google Calendar'a tekrar senkronlanmasi saglanmali.
+- Google Calendar'dan gelen etkinlikler Berkay Hub ekraninda okunabilir hale getirilmeli.
+- Cakisan etkinlik ve ders saatleri icin uyari mekanizmasi eklenmeli.
+- Token suresi doldugunda otomatik yenileme ve hata bildirimi gelmeli.
+- VDS/domain ortaminda Google Cloud `Authorized JavaScript origins` ve `Authorized redirect URIs` degerleri README'ye net orneklerle eklenmeli.
+- Google entegrasyonu icin backend testleri ve manuel dogrulama adimlari yazilmali.
+
+### 2. Kulup, Gorev ve Rapor Akisi
+
+- Rapor dosyasi upload boyut limiti belirlenmeli.
+- Kabul edilen dosya tipleri netlestirilmeli. Ornek: PDF, DOCX, XLSX, PNG, JPG, ZIP.
+- Yuklenen dosyalar icin virus/malware tarama veya en azindan MIME/uzanti kontrolu eklenmeli.
+- Rapor dosyalarina admin icin tarayici icinde onizleme ozelligi eklenebilir.
+- Red edilen rapor icin admin red nedeni yazabilmeli; bu not uye bildiriminde gorunmeli.
+- Rapor versiyonlama eklenebilir. Uye reddedilen rapor icin yeni dosya yukleyebilir.
+- Gorevlerde son teslim tarihi, durum ve yorum akisi eklenmeli.
+- Bildirimler icin okunmamis filtre, tumunu okundu yap ve sayfalama eklenmeli.
+- Bildirimlerin anlik gelmesi icin polling, Server-Sent Events veya WebSocket degerlendirilmeli.
+
+### 3. Rol ve Yetki Modeli
+
+- Backend rol modeli su an `USER` ve `ADMIN` temelli. Detayli kulup rolleri backend'e kalici olarak eklenmeli.
+- Takim uyesi, takim kaptani, departman baskani gibi roller icin yetki matrisi olusturulmali.
+- Rol atama endpointleri audit log tutmali.
+- Varsayilan admin sifresi uretimde degistirilmeli.
+- Kendi admin yetkisini kaldirma ve son admini silme gibi senaryolar backend tarafinda daha guclu korunmali.
+
+### 4. VDS, Guvenlik ve Operasyon
+
+- Domain alindiktan sonra HTTPS icin Nginx + Let's Encrypt kurulmali.
+- Rapor klasoru icin duzenli yedekleme plani yapilmali.
+- SQLite yedegi ve volume snapshot akisi dokumante edilmeli.
+- VDS'de `target/` derleme ciktisi GitHub'a pushlanmamalidir.
+- Log dosyalari ve hata izleme icin merkezi logging dusunulmeli.
+- Docker Compose icin production `.env` dosyasi eklenmeli.
+
+### 5. Test ve Kalite
+
+- Backend icin controller/service testleri eklenmeli.
+- Rapor upload/download yetki testleri yazilmali.
+- Admin kabul/red akisi test edilmeli.
+- Frontend icin Playwright smoke testleri eklenebilir.
+- Google Calendar entegrasyonu icin mock Google API testleri hazirlanmali.
