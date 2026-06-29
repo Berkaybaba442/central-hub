@@ -164,22 +164,22 @@ Ornekler:
 ```text
 Authorized JavaScript origins:
 - http://localhost:5500
-- http://SUNUCU_IP
-- http://SUNUCU_IP:5500
+- https://mueemk.com.tr
+- https://eemk.com.tr
 
 Authorized redirect URIs:
 - http://localhost:8080/api/google-calendar/oauth/callback
-- http://SUNUCU_IP/api/google-calendar/oauth/callback
-- http://SUNUCU_IP:8080/api/google-calendar/oauth/callback
+- https://mueemk.com.tr/api/google-calendar/oauth/callback
+- https://eemk.com.tr/api/google-calendar/oauth/callback
 ```
 
-Not: Callback URL Google Cloud'daki `Authorized redirect URIs` degeriyle birebir ayni olmalidir. Uygulama Nginx ile `/api` altindan yayinlaniyorsa production redirect URI genellikle `http://SUNUCU_IP/api/google-calendar/oauth/callback` veya HTTPS sonrasinda `https://DOMAIN/api/google-calendar/oauth/callback` olur.
+Not: Callback URL Google Cloud'daki `Authorized redirect URIs` degeriyle sema, host, port, path ve sondaki slash dahil birebir ayni olmalidir. Google public raw IP adreslerini redirect URI hostu olarak kabul etmez ve `localhost` disinda HTTPS ister. Production redirect URI `https://DOMAIN/api/google-calendar/oauth/callback` biciminde olmalidir.
 
 Guncel karar/not:
 
 - Google Cloud OAuth consent/audience tarafinda kulupten ve farkli Gmail hesaplarindan kullanim icin `External` secilmelidir.
 - Local gelistirme `localhost` adresleriyle devam edebilir; domain satin almadan local test yapilabilir.
-- VDS/IP uzerinde production Google OAuth icin public IP yeterli olmayabilir. Google redirect URI kurallari nedeniyle domain + HTTPS akisi tercih edilmelidir.
+- VDS/IP uzerinde production Google OAuth icin public IP kullanilamaz. Google redirect URI kurallari nedeniyle domain + HTTPS gereklidir.
 - Domain adaylari: `mueemk.com.tr` veya `eemk.com.tr`.
 - Domain secildikten sonra Google Cloud tarafinda Authorized JavaScript origin ve Authorized redirect URI degerleri secilen domaine gore guncellenmelidir. Ornek:
 
@@ -425,19 +425,28 @@ environment:
   - BERKAY_HUB_REPORT_DIR=/app/data/reports
 ```
 
-Google Calendar entegrasyonu icin backend servisine su ortam degiskenleri eklenmelidir:
+Google Calendar entegrasyonu icin `deploy/.env.example` dosyasi `deploy/.env` olarak kopyalanip gercek degerlerle doldurulmalidir. `deploy/.env` Git tarafindan yok sayilir ve Docker Compose bu dosyadaki degerleri backend servisine aktarir:
 
-```yaml
-environment:
-  - GOOGLE_CALENDAR_CLIENT_ID=...
-  - GOOGLE_CALENDAR_CLIENT_SECRET=...
-  - GOOGLE_CALENDAR_REDIRECT_URI=http://SUNUCU_IP/api/google-calendar/oauth/callback
-  - BERKAY_HUB_GOOGLE_TOKEN_SECRET=uzun-rastgele-secret
-  - BERKAY_HUB_FRONTEND_URL=http://SUNUCU_IP/modules/academic-planner/index.html
-  - BERKAY_HUB_TIME_ZONE=Europe/Istanbul
+```bash
+cd /opt/central-hub/deploy
+cp .env.example .env
+chmod 600 .env
 ```
 
-Frontend `5500:80` portundan yayinlaniyorsa `BERKAY_HUB_FRONTEND_URL` ve Google Cloud origin degeri `http://SUNUCU_IP:5500` seklinde verilmelidir.
+Domain hazir degilken VDS akisi local olarak su degerlerle test edilebilir:
+
+```text
+GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:8080/api/google-calendar/oauth/callback
+BERKAY_HUB_FRONTEND_URL=http://localhost:5500/modules/academic-planner/index.html
+```
+
+Bu testte gelistirici bilgisayarindan VDS'ye iki port yonlendirilir ve uygulama mutlaka `http://localhost:5500` adresinden acilir:
+
+```bash
+ssh -L 5500:localhost:5500 -L 8080:localhost:8080 root@SUNUCU_IP
+```
+
+Production'da secilen domain icin iki deger de HTTPS olmali; `BERKAY_HUB_FRONTEND_URL` uygulamanin akademik planlayici sayfasini, `GOOGLE_CALENDAR_REDIRECT_URI` ise `/api/google-calendar/oauth/callback` adresini gostermelidir.
 
 Port 80'den yayinlamak istersen `deploy/docker-compose.yml` icinde frontend portunu su hale getir:
 
