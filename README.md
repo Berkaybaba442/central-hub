@@ -178,6 +178,10 @@ Not: Callback URL Google Cloud'daki `Authorized redirect URIs` degeriyle sema, h
 Guncel karar/not:
 
 - Google Cloud OAuth consent/audience tarafinda kulupten ve farkli Gmail hesaplarindan kullanim icin `External` secilmelidir.
+- Gelistirme sirasinda publishing status `Testing` olarak kalabilir. Bu durumda Google Auth Platform > Audience > Test users > Add users adimindan takvime baglanacak Gmail hesaplari tek tek eklenmelidir.
+- `Hata 403: access_denied` ve uygulamanin dogrulama surecini tamamlamadigi mesaji gorulurse, tarayicida secilen Google hesabinin Test users listesinde oldugu kontrol edilmelidir. Hesap eklendikten sonra ayarin yayilmasi icin birkac dakika beklenip yeniden denenebilir.
+- Testing durumunda en fazla 100 test kullanicisi eklenebilir. Calendar gibi ek OAuth izinleri icin kullanici yetkisi ve refresh token 7 gun sonra sona erer; bu surecte kullanicinin Google Calendar hesabini yeniden baglamasi gerekir.
+- Uygulama tum kullanicilara acilmadan once production yayin ve gerekiyorsa Google OAuth dogrulama sureci ayrica tamamlanmalidir.
 - Local gelistirme `localhost` adresleriyle devam edebilir; domain satin almadan local test yapilabilir.
 - VDS/IP uzerinde production Google OAuth icin public IP kullanilamaz. Google redirect URI kurallari nedeniyle domain + HTTPS gereklidir.
 - Domain adaylari: `mueemk.com.tr` veya `eemk.com.tr`.
